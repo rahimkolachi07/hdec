@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign In — SolarCMMS Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg0:#04060f;--bg1:#080c18;--bg2:#0d1120;--bg3:#121828;--gold:#f5c518;--gold2:#c9970a;--t1:#e8eeff;--t2:#4a5c84;--bdr:#14203a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg0);color:var(--t1);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden}
+/* Animated background orbs */
+.orb{position:fixed;border-radius:50%;filter:blur(80px);opacity:.08;animation:float 8s ease-in-out infinite;pointer-events:none}
+.orb1{width:400px;height:400px;background:var(--gold);top:-100px;right:-100px;animation-delay:0s}
+.orb2{width:300px;height:300px;background:#40c4ff;bottom:-80px;left:-80px;animation-delay:3s}
+.orb3{width:200px;height:200px;background:#e040fb;top:50%;right:10%;animation-delay:5s}
+@keyframes float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-20px) scale(1.05)}}
+.wrap{width:100%;max-width:420px;position:relative;z-index:1}
+.logo-area{text-align:center;margin-bottom:36px}
+.logo-icon{width:64px;height:64px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 40px rgba(245,197,24,.3)}
+.bname{font-family:'Orbitron',monospace;font-size:22px;font-weight:700;color:var(--gold);letter-spacing:1px}
+.bsub{font-size:11px;color:var(--t2);margin-top:4px;letter-spacing:.3px}
+.card{background:rgba(13,17,32,.9);border:1px solid var(--bdr);border-radius:20px;padding:32px;backdrop-filter:blur(20px);box-shadow:0 24px 64px rgba(0,0,0,.6)}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);border-radius:20px 20px 0 0}
+.ftit{font-family:'Orbitron',monospace;font-size:10px;font-weight:600;color:var(--t2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:24px;text-align:center}
+.fg{margin-bottom:16px}
+label{display:block;font-size:10px;color:var(--t2);margin-bottom:5px;font-family:'Orbitron',monospace;letter-spacing:.6px;text-transform:uppercase}
+input[type=text],input[type=password]{
+  width:100%;background:rgba(255,255,255,.04);
+  border:1px solid var(--bdr);border-radius:10px;
+  padding:11px 14px;color:var(--t1);font-size:13px;font-family:'Inter',sans-serif;
+  outline:none;transition:all .25s;
+}
+input:focus{border-color:var(--gold);background:rgba(245,197,24,.04);box-shadow:0 0 0 3px rgba(245,197,24,.08)}
+input::placeholder{color:var(--t2)}
+.lbtn{
+  width:100%;background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:#04060f;border:none;border-radius:10px;padding:13px;
+  font-family:'Orbitron',monospace;font-size:11px;font-weight:700;
+  letter-spacing:.5px;cursor:pointer;transition:all .25s;margin-top:8px;
+  box-shadow:0 4px 20px rgba(245,197,24,.3);
+}
+.lbtn:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(245,197,24,.4)}
+.lbtn:active{transform:translateY(0)}
+.err{background:rgba(255,23,68,.08);border:1px solid rgba(255,23,68,.2);border-radius:9px;padding:9px 14px;font-size:12px;color:#ff1744;margin-bottom:16px}
+.divider{border:none;border-top:1px solid var(--bdr);margin:20px 0}
+.hint{text-align:center;font-size:10px;color:var(--t2)}
+.hint span{color:var(--t3)}
+</style>
+</head>
+<body>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+<div class="wrap">
+  <div class="logo-area">
+    <div class="logo-icon">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <circle cx="18" cy="18" r="7" fill="#04060f"/>
+        <line x1="18" y1="2"  x2="18" y2="8"  stroke="#04060f" stroke-width="3" stroke-linecap="round"/>
+        <line x1="18" y1="28" x2="18" y2="34" stroke="#04060f" stroke-width="3" stroke-linecap="round"/>
+        <line x1="2"  y1="18" x2="8"  y2="18" stroke="#04060f" stroke-width="3" stroke-linecap="round"/>
+        <line x1="28" y1="18" x2="34" y2="18" stroke="#04060f" stroke-width="3" stroke-linecap="round"/>
+        <line x1="6.5"  y1="6.5"  x2="11" y2="11" stroke="#04060f" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="25"   y1="25"   x2="29.5" y2="29.5" stroke="#04060f" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="6.5"  y1="29.5" x2="11" y2="25"   stroke="#04060f" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="25"   y1="11"   x2="29.5" y2="6.5" stroke="#04060f" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="bname">SolarCMMS Pro</div>
+    <div class="bsub">Solar Plant Maintenance Intelligence</div>
+  </div>
+  <div class="card">
+    <div class="ftit">Sign in to your account</div>
+    {% if form.errors %}<div class="err">Invalid username or password. Please try again.</div>{% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <div class="fg"><label>Username</label><input type="text" name="username" autofocus autocomplete="username" placeholder="Enter your username"></div>
+      <div class="fg"><label>Password</label><input type="password" name="password" autocomplete="current-password" placeholder="Enter your password"></div>
+      <button type="submit" class="lbtn">Sign In →</button>
+    </form>
+    <hr class="divider">
+    <div class="hint">Al Rajhi Solar Plant · March 2026<br><span>Auto-syncs from Google Sheets every 5 minutes</span></div>
+  </div>
+</div>
+</body>
+</html>

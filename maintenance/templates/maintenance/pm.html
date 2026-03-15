@@ -1,0 +1,72 @@
+{% extends 'maintenance/base.html' %}
+{% load maintenance_extras %}
+{% block title %}PM Tracing{% endblock %}
+{% block content %}
+<div class="sh">preventive maintenance tracing — all weeks</div>
+{% for week_num in weeks %}{% with w=pm|get_item:week_num %}
+<div style="margin-bottom:20px">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+    <div style="width:28px;height:28px;border-radius:8px;background:rgba(245,197,24,.12);border:1px solid rgba(245,197,24,.2);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--gold)">{{ week_num }}</div>
+    <div style="font-family:'Orbitron',monospace;font-size:11px;color:var(--gold);letter-spacing:.5px">Week {{ week_num }} — {{ w.label }}</div>
+    <span class="bdg {% if w.compliance >= 90 %}b-ok{% elif w.compliance >= 70 %}b-warn{% else %}b-crit{% endif %}">{{ w.compliance }}%</span>
+  </div>
+  <div class="g3" style="margin-bottom:10px">
+    <div class="kpi"><div class="kt" style="background:linear-gradient(90deg,var(--ok),var(--teal))"></div><div class="klab">Compliance</div><div class="kval vok">{{ w.compliance }}%</div><div class="ksub">Week {{ week_num }}</div><div class="kbar"><div class="kfill" style="width:{{ w.compliance }}%;background:linear-gradient(90deg,var(--ok),var(--teal))"></div></div><div class="kfoot"><span class="vok">{{ w.done }} done</span><span class="vc">{{ w.pending }} pending</span></div></div>
+    <div class="kpi"><div class="kt" style="background:linear-gradient(90deg,var(--info),var(--sky))"></div><div class="klab">Scheduled</div><div class="kval vi" style="font-size:22px">{{ w.sched }}</div><div class="ksub">Total tasks</div><div class="kbar"><div class="kfill" style="width:100%;background:var(--info)"></div></div></div>
+    <div class="kpi"><div class="kt" style="background:linear-gradient(90deg,var(--crit),var(--coral))"></div><div class="klab">Pending</div><div class="kval vc" style="font-size:22px">{{ w.pending }}</div><div class="ksub">Need attention</div><div class="kbar"><div class="kfill" style="width:{% if w.sched %}{% widthratio w.pending w.sched 100 %}{% else %}0{% endif %}%;background:var(--crit)"></div></div></div>
+  </div>
+  <div class="g21" style="margin-bottom:10px">
+    <div class="card">
+      <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--ok)"></div>Task completion — week {{ week_num }}</div></div>
+      <div style="position:relative;height:220px"><canvas id="cpm{{ week_num }}b"></canvas></div>
+    </div>
+    <div class="g2" style="margin-bottom:0;display:flex;flex-direction:column;gap:12px">
+      <div class="card" style="flex:1">
+        <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--gold)"></div>Gauge</div></div>
+        <div style="display:flex;justify-content:center;padding:6px 0">
+          <div class="g-item" style="width:120px">
+            <div class="gc" style="width:100px;height:100px"><canvas id="gpm{{ week_num }}" width="100" height="100"></canvas><div class="gc-inner"><div class="gval" style="font-size:16px;color:var(--ok)">{{ w.compliance }}%</div><div class="gsub">W{{ week_num }}</div></div></div>
+            <div class="glbl">PM Week {{ week_num }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="flex:1">
+        <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--teal)"></div>By area</div></div>
+        <div style="position:relative;height:80px"><canvas id="cpm{{ week_num }}a"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--info)"></div>Task list — week {{ week_num }}</div></div>
+    <div class="tw"><table><thead><tr><th>Area</th><th>Task</th><th>Frequency</th><th>Scheduled</th><th>Done</th><th>Status</th></tr></thead>
+    <tbody>{% for t in w.tasks %}<tr>
+      <td><span class="bdg {% if t.area == 'PV' %}b-info{% elif t.area == 'HSE' %}b-purple{% else %}b-gold{% endif %}">{{ t.area }}</span></td>
+      <td style="font-weight:500">{{ t.task }}</td>
+      <td><span class="bdg b-gray" style="font-size:11px">{% if '-D' in t.task %}Daily{% elif '-W' in t.task %}Weekly{% elif '-M' in t.task %}Monthly{% elif '-HY' in t.task %}Half-Yr{% else %}Other{% endif %}</span></td>
+      <td style="text-align:center;font-family:'Orbitron',monospace;font-size:12px">{% if t.all_done %}All{% else %}{{ t.sched }}{% endif %}</td>
+      <td style="text-align:center;font-family:'Orbitron',monospace;font-size:12px;color:{% if t.status == 'Done' %}var(--ok){% elif t.status == 'Pending' %}var(--crit){% else %}var(--warn){% endif %}">{% if t.all_done %}All{% else %}{{ t.done }}{% endif %}</td>
+      <td><span class="bdg {% if t.status == 'Done' %}b-ok{% elif t.status == 'Pending' %}b-warn{% else %}b-info{% endif %}">{{ t.status }}</span></td>
+    </tr>{% endfor %}
+    <tr style="background:rgba(245,197,24,.04);border-top:1px solid rgba(245,197,24,.1)"><td colspan="3" style="font-family:'Orbitron',monospace;font-size:11px;color:var(--gold);font-weight:700">TOTAL</td><td style="text-align:center;font-weight:600;font-family:'Orbitron',monospace">{{ w.sched }}</td><td style="text-align:center;font-weight:700;font-family:'Orbitron',monospace;color:var(--ok)">{{ w.done }}</td><td><span class="bdg {% if w.compliance >= 90 %}b-ok{% else %}b-warn{% endif %}">{{ w.compliance }}%</span></td></tr>
+    </tbody></table></div>
+  </div>
+</div>
+{% endwith %}{% endfor %}
+{% endblock %}
+{% block extra_js %}
+<script>
+{% for week_num in weeks %}{% with w=pm|get_item:week_num %}
+drawGauge('gpm{{ week_num }}', {{ w.compliance|default:0 }}, '#00e676', '#182035', 9, true);
+(function(){
+  const tasks = {{ w.tasks|safe_json }};
+  const byArea = {};
+  tasks.forEach(t => { if(!t.all_done) byArea[t.area] = (byArea[t.area]||0) + (t.sched||0); });
+  new Chart(document.getElementById('cpm{{ week_num }}a'),{type:'doughnut',data:{labels:Object.keys(byArea),datasets:[{data:Object.values(byArea),backgroundColor:CL,borderWidth:2,borderColor:'var(--bg2)'}]},options:{...DD,plugins:{legend:{display:true,position:'right',labels:{color:'#8a9dc4',font:{size:11},boxWidth:10,padding:8}}}}});
+  const labs = tasks.map(t=>t.task.substring(0,14));
+  const sch  = tasks.map(t=>t.all_done?0:t.sched||0);
+  const dn   = tasks.map(t=>t.all_done?0:t.done||0);
+  new Chart(document.getElementById('cpm{{ week_num }}b'),{type:'bar',data:{labels:labs,datasets:[{label:'Scheduled',data:sch,backgroundColor:'rgba(255,255,255,.06)',borderRadius:4,borderSkipped:false},{label:'Done',data:dn,backgroundColor:'rgba(0,230,118,.7)',borderRadius:4,borderSkipped:false}]},options:{...CD,plugins:{legend:{display:true,labels:{color:'#8a9dc4',font:{size:11},boxWidth:10,padding:8}}},scales:{x:{ticks:{color:'#8a9dc4',font:{size:11},maxRotation:45,autoSkip:false},grid:{display:false},border:{display:false}},y:{ticks:{color:'#8a9dc4',font:{size:11}},grid:{color:'rgba(20,32,58,.8)'},border:{display:false}}}}});
+})();
+{% endwith %}{% endfor %}
+</script>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends 'maintenance/base.html' %}
+{% load maintenance_extras %}
+{% block title %}Sheet Sync{% endblock %}
+{% block content %}
+<div class="sh">google sheet — automatic download &amp; parse</div>
+
+<!-- Big status bar -->
+<div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:18px 20px;margin-bottom:12px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div id="bigDot" style="width:18px;height:18px;border-radius:50%;flex-shrink:0;transition:all .4s;background:{% if state.download_ok %}var(--ok);box-shadow:0 0 14px var(--ok){% elif state.download_ok == False %}var(--crit);box-shadow:0 0 14px var(--crit){% else %}var(--warn);box-shadow:0 0 14px var(--warn){% endif %}"></div>
+    <div>
+      <div id="statusTitle" style="font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:{% if state.download_ok %}var(--ok){% elif state.download_ok == False %}var(--crit){% else %}var(--warn){% endif %}">
+        {% if state.status == 'live' %}LIVE — Auto-syncing every {{ interval }} min
+        {% elif state.status == 'downloading' %}DOWNLOADING SHEET...
+        {% elif state.status == 'parsing' %}PARSING ALL TABS...
+        {% elif state.status == 'error' %}SYNC ERROR
+        {% else %}STARTING UP...{% endif %}
+      </div>
+      <div style="font-size:12px;color:var(--t2);margin-top:3px">
+        Last download: <span id="ldTime" style="color:var(--t1)">{{ state.last_download|default:"Never" }}</span>
+        &nbsp;·&nbsp; Last parse: <span id="lpTime" style="color:var(--t1)">{{ state.last_parse|default:"Never" }}</span>
+        &nbsp;·&nbsp; File: <span style="color:var(--gold)">{{ state.file_size_kb }} KB</span>
+        &nbsp;·&nbsp; Parses: <span style="color:var(--teal)">{{ state.parse_count }}</span>
+      </div>
+    </div>
+  </div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:16px">
+    <div style="text-align:center">
+      <div style="font-family:'Orbitron',monospace;font-size:26px;font-weight:700;color:var(--gold)" id="countdown">--</div>
+      <div style="font-size:11px;color:var(--t2);font-family:'Orbitron',monospace;letter-spacing:.5px">NEXT DOWNLOAD</div>
+    </div>
+    {% if is_admin %}
+    <button onclick="syncNow(this)" style="background:var(--gold);color:#070913;border:none;border-radius:9px;padding:10px 20px;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.3px" onmouseover="this.style.background='var(--gold2)'" onmouseout="this.style.background='var(--gold)'">
+      ↻ Download Now
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+{% if state.error %}
+<div style="background:#1a0006;border:1px solid var(--crit);border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--crit)">
+  <strong>Error:</strong> {{ state.error }}
+</div>
+{% endif %}
+
+<!-- How it works + connection + parsed tabs -->
+<div class="g3">
+  <div class="card">
+    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--ok)"></div>How auto-sync works</div></div>
+    <div style="font-size:13px;color:var(--t2);line-height:2">
+      {% for num, text in steps %}
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+        <div style="width:22px;height:22px;background:var(--bg3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--gold);flex-shrink:0;margin-top:1px">{{ num }}</div>
+        <span>{{ text }}</span>
+      </div>
+      {% endfor %}
+      <div style="margin-top:8px;padding:8px 10px;background:var(--bg3);border-radius:7px;font-size:12px;color:var(--teal);font-family:'Orbitron',monospace">
+        ✓ No API key &nbsp;·&nbsp; ✓ No credentials &nbsp;·&nbsp; ✓ Just works
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--info)"></div>Connection &amp; status</div></div>
+    <div class="sr"><span class="srl">Sheet URL</span><a href="https://docs.google.com/spreadsheets/d/{{ sheet_id }}" target="_blank" style="font-size:11px;color:var(--info);font-family:monospace">Open ↗</a></div>
+    <div class="sr"><span class="srl">Download method</span><span class="bdg b-ok">Public URL</span></div>
+    <div class="sr"><span class="srl">Change detection</span><span class="bdg b-ok">SHA-256 hash</span></div>
+    <div class="sr"><span class="srl">Interval</span><span id="sr-interval" style="font-family:'Orbitron',monospace;font-size:11px;color:var(--gold)">{{ interval }} min</span></div>
+    <div class="sr"><span class="srl">Downloads done</span><span id="sr-dlcount" style="font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:var(--ok)">{{ state.download_count }}</span></div>
+    <div class="sr"><span class="srl">Parses done</span><span id="sr-parsecount" style="font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:var(--teal)">{{ state.parse_count }}</span></div>
+    <div class="sr"><span class="srl">File size</span><span style="font-family:'Orbitron',monospace;font-size:11px;color:var(--t2)">{{ state.file_size_kb }} KB</span></div>
+  </div>
+
+  <div class="card">
+    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--gold)"></div>Sheet tabs synced</div></div>
+    {% if data_summary %}
+      {% for tab, count in data_summary.items %}
+      <div class="sr" style="padding:5px 0">
+        <span style="font-size:11px;color:var(--t2)">{{ tab }}</span>
+        <span class="bdg b-ok" style="font-size:11px">{{ count }} rows</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div style="color:var(--t2);font-size:11px;padding:8px 0">Waiting for first download...</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Update your data guide -->
+<div class="g2">
+  <div class="card">
+    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--gold)"></div>To update dashboard data</div></div>
+    <div style="font-size:12px;color:var(--t2);line-height:2">
+      <div style="background:var(--bg3);border-radius:9px;padding:13px 15px;line-height:2.2">
+        <div><span style="color:var(--gold);font-family:'Orbitron',monospace;font-size:11px">STEP 1</span> &nbsp; Open your <a href="https://docs.google.com/spreadsheets/d/{{ sheet_id }}" target="_blank" style="color:var(--info)">Google Sheet ↗</a></div>
+        <div><span style="color:var(--gold);font-family:'Orbitron',monospace;font-size:11px">STEP 2</span> &nbsp; Edit any cell, add rows, change status values</div>
+        <div><span style="color:var(--gold);font-family:'Orbitron',monospace;font-size:11px">STEP 3</span> &nbsp; Wait {{ interval }} min for auto-download <span style="color:var(--t3)">OR</span> click <strong style="color:var(--gold)">Download Now</strong></div>
+        <div><span style="color:var(--gold);font-family:'Orbitron',monospace;font-size:11px">STEP 4</span> &nbsp; Refresh any dashboard page — data is updated</div>
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;background:var(--bg3);border-radius:7px;display:flex;align-items:center;gap:8px;font-size:11px">
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--ok)"></div>
+        Top-bar numbers update automatically without page reload
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--purple)"></div>Change interval — settings.py</div></div>
+    <pre style="background:var(--bg3);padding:14px;border-radius:8px;font-size:12px;color:var(--ok);line-height:2.2;font-family:monospace;overflow-x:auto">
+SHEET_DOWNLOAD_INTERVAL_MINUTES = 60  # every 1 hour
+SHEET_DOWNLOAD_INTERVAL_MINUTES = 30  # every 30 min
+SHEET_DOWNLOAD_INTERVAL_MINUTES = 5   # every 5 min ← default
+SHEET_DOWNLOAD_INTERVAL_MINUTES = 1   # every 1 min (testing)</pre>
+    <div style="margin-top:8px;font-size:11px;color:var(--t2)">Restart Django after changing this setting.</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function syncNow(btn){
+  btn.textContent = '↻ Downloading...';
+  btn.disabled = true;
+  fetch('/api/sync-now/', {method:'POST', headers:{'X-CSRFToken':'{{ csrf_token }}'}})
+    .then(r=>r.json())
+    .then(d=>{
+      btn.textContent='↻ Started!';
+      setTimeout(()=>{btn.textContent='↻ Download Now';btn.disabled=false;}, 3000);
+    })
+    .catch(()=>{btn.textContent='↻ Download Now';btn.disabled=false;});
+}
+
+function updateSyncPage(){
+  fetch('/api/sync-status/')
+    .then(r=>r.json())
+    .then(s=>{
+      const cd = document.getElementById('countdown');
+      if(cd && s.next_in_sec != null){
+        const m=Math.floor(s.next_in_sec/60), sc=s.next_in_sec%60;
+        cd.textContent = m>0 ? m+'m '+String(sc).padStart(2,'0')+'s' : sc+'s';
+      }
+      // Update big dot
+      const bd = document.getElementById('bigDot');
+      const st = document.getElementById('statusTitle');
+      if(bd){
+        if(s.download_ok===true){
+          bd.style.background='var(--ok)';bd.style.boxShadow='0 0 14px var(--ok)';
+          if(st){st.style.color='var(--ok)';st.textContent='LIVE — Auto-syncing';}
+        } else if(s.download_ok===false){
+          bd.style.background='var(--crit)';bd.style.boxShadow='0 0 14px var(--crit)';
+          if(st){st.style.color='var(--crit)';st.textContent='SYNC ERROR';}
+        } else {
+          bd.style.background='var(--warn)';bd.style.boxShadow='0 0 14px var(--warn)';
+          if(st){st.style.color='var(--warn)';st.textContent='SYNCING...';}
+        }
+      }
+      // Update stat rows
+      const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+      el('ldTime', s.last_download||'Never');
+      el('lpTime', s.last_parse||'Never');
+      el('sr-dlcount', s.download_count);
+      el('sr-parsecount', s.parse_count);
+    }).catch(()=>{});
+}
+updateSyncPage();
+setInterval(updateSyncPage, 3000); // update every 3s on this page
+</script>
+{% endblock %}
