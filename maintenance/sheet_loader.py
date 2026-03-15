@@ -483,3 +483,95 @@ def start_worker(sheet_id, local_path, interval_minutes=5):
 def force_sync_now(sheet_id, local_path):
     def _bg(): do_sync(sheet_id, local_path, force=True)
     threading.Thread(target=_bg, daemon=True).start()
+
+
+# ─── Daily Activity Sheet ─────────────────────────────────────────────────────
+
+_daily_state = {
+    "last_download": None, "download_ok": None, "error": "",
+    "data": {}, "last_hash": None,
+}
+_daily_lock = threading.Lock()
+
+def get_daily_data():
+    with _daily_lock: return _daily_state["data"]
+
+def _upd_daily(**kw):
+    with _daily_lock: _daily_state.update(kw)
+
+def _parse_daily_sheet(df_map):
+    """Parse daily activity sheet — handles any reasonable structure."""
+    daily = {}
+    for sheet_name, df in df_map.items():
+        rows = []
+        # Try to find header row (row with most non-null values)
+        best_row = 0
+        for i in range(min(5, len(df))):
+            non_null = df.iloc[i].notna().sum()
+            if non_null > df.iloc[best_row].notna().sum():
+                best_row = i
+
+        # Use best_row as header
+        if best_row > 0:
+            df.columns = [_ss(c) for c in df.iloc[best_row]]
+            df = df.iloc[best_row+1:].reset_index(drop=True)
+        else:
+            df.columns = [_ss(c) if _ss(c) else f"col_{i}" for i, c in enumerate(df.columns)]
+
+        # Parse all rows into dicts
+        for _, row in df.iterrows():
+            d = {}
+            for col in df.columns:
+                v = row[col]
+                if isinstance(v, (int, float)):
+                    import math
+                    if not math.isnan(float(v)): d[col] = v
+                elif _ss(v):
+                    d[col] = _ss(v)
+            if d:
+                rows.append(d)
+
+        daily[sheet_name] = {
+            "rows": rows,
+            "columns": list(df.columns),
+            "count": len(rows),
+        }
+    return daily
+
+def sync_daily(daily_sheet_id, daily_local_path):
+    """Download and parse the daily activity sheet."""
+    url = f"https://docs.google.com/spreadsheets/d/{daily_sheet_id}/export?format=xlsx"
+    try:
+        import requests as req
+        r = req.get(url, timeout=30)
+        if r.status_code == 200:
+            content = r.content
+            new_hash = hashlib.sha256(content).hexdigest()
+            with _daily_lock:
+                old_hash = _daily_state["last_hash"]
+            changed = (new_hash != old_hash)
+
+            Path(daily_local_path).parent.mkdir(parents=True, exist_ok=True)
+            with open(daily_local_path, "wb") as f:
+                f.write(content)
+
+            _upd_daily(download_ok=True, last_download=datetime.now().strftime("%d %b %Y %H:%M:%S"),
+                       last_hash=new_hash, error="")
+
+            if changed:
+                xl = pd.read_excel(daily_local_path, sheet_name=None)
+                data = _parse_daily_sheet(xl)
+                _upd_daily(data=data)
+                logger.info(f"[Daily] Parsed {len(data)} sheets")
+        else:
+            _upd_daily(download_ok=False, error=f"HTTP {r.status_code}")
+    except Exception as e:
+        _upd_daily(download_ok=False, error=str(e))
+        # Try cached file
+        if os.path.exists(daily_local_path) and not _daily_state["data"]:
+            try:
+                xl = pd.read_excel(daily_local_path, sheet_name=None)
+                data = _parse_daily_sheet(xl)
+                _upd_daily(data=data, download_ok=True)
+                logger.info("[Daily] Using cached daily file")
+            except: pass

@@ -3,27 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{% block title %}HDEC{% endblock %} · al henakiya 1100MW</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>{% block title %}HDEC CMMS{% endblock %} · POWER CHINA HDEC</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 :root {
-  --bg0:#04060f; --bg1:#080c18; --bg2:#0d1120; --bg3:#121828; --bg4:#182035; --bg5:#1e2840;
-  --gold:#f5c518; --gold2:#ffe566; --gold3:#c9970a;
-  --ok:#00e676; --ok2:#00c853; --warn:#ffab00; --warn2:#ff6d00;
-  --crit:#ff1744; --crit2:#c62828; --info:#40c4ff; --info2:#0091ea;
-  --purple:#e040fb; --teal:#1de9b6; --coral:#ff6e40; --sky:#82b1ff;
-  /* Text: t1=primary, t2=secondary (visible!), t3=muted (still readable), t4=subtle */
-  --t1:#eef2ff; --t2:#a0b0d8; --t3:#6d80aa; --t4:#4a5c84;
-  --bdr:#14203a; --bdr2:#1e2d4a;
-  --r:11px; --r2:16px;
-  --glow-ok:0 0 20px rgba(0,230,118,.25); --glow-warn:0 0 20px rgba(255,171,0,.25);
-  --glow-crit:0 0 20px rgba(255,23,68,.25); --glow-info:0 0 20px rgba(64,196,255,.25);
-  --glow-gold:0 0 20px rgba(245,197,24,.25);
+  /* Surfaces — deep navy blue-black, NOT pure black */
+  --bg0:#06080f; --bg1:#09091a; --bg2:#0d1020; --bg3:#111528; --bg4:#161c32; --bg5:#1c2440;
+
+  /* Brand accent — warm gold/amber */
+  --gold:#c8980e; --gold2:#e5ad1a; --gold3:#f5c842;
+
+  /* Status — desaturated enough to not burn eyes */
+  --ok:#1a9e5c;    --ok2:#22c068;
+  --warn:#c87820;  --warn2:#e89030;
+  --crit:#b83030;  --crit2:#d94040;
+  --info:#1e6faa;  --info2:#2888cc;
+
+  /* Accent colors — muted, professional */
+  --purple:#7340a0; --purple2:#9060c0;
+  --teal:#127a68;   --teal2:#19a08a;
+  --coral:#b84828;  --sky:#2a7ab8;
+
+  /* Text — NOT white, soft warm grey */
+  --t1:#d8dce8; --t2:#7888a8; --t3:#3d4d6a; --t4:#1e2838;
+
+  /* Borders — subtle */
+  --bdr:#141e30; --bdr2:#1c2840;
+
+  /* Border radius */
+  --r:10px; --r2:14px;
+
+  /* Glows — very subtle */
+  --glow-ok:0 0 16px rgba(26,158,92,.2);
+  --glow-warn:0 0 16px rgba(200,120,32,.2);
+  --glow-crit:0 0 16px rgba(184,48,48,.2);
+  --glow-info:0 0 16px rgba(30,111,170,.2);
+  --glow-gold:0 0 16px rgba(200,152,14,.2);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{font-family:'Inter',sans-serif;background:var(--bg0);color:var(--t1);font-size:13px;overflow:hidden}
+body{font-family:'Sora',sans-serif;background:var(--bg0);color:var(--t1);font-size:13px;overflow:hidden}
 a{text-decoration:none;color:inherit}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -40,17 +60,17 @@ a{text-decoration:none;color:inherit}
 }
 .brand{display:flex;align-items:center;gap:12px}
 .brand-logo{
-  width:38px;height:38px;background:linear-gradient(135deg,var(--gold),var(--gold3));
+  width:38px;height:38px;background:linear-gradient(135deg,#8a1010,#b01818);
   border-radius:10px;display:flex;align-items:center;justify-content:center;
   flex-shrink:0;box-shadow:var(--glow-gold);
 }
-.brand-name{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--gold);letter-spacing:.8px}
+.brand-name{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--gold);letter-spacing:.8px}
 .brand-sub{font-size:11px;color:var(--t2);margin-top:1px;letter-spacing:.2px;font-weight:500}
 .top-pills{display:flex;gap:5px}
 .tpill{
   display:flex;align-items:center;gap:5px;
   background:rgba(255,255,255,.03);border:1px solid var(--bdr2);
-  border-radius:20px;padding:5px 11px;font-size:10px;font-family:'Orbitron',monospace;
+  border-radius:20px;padding:5px 11px;font-size:10px;font-family:'JetBrains Mono',monospace;
   transition:all .3s;cursor:default;
 }
 .tpill:hover{background:rgba(255,255,255,.06);border-color:var(--t3)}
@@ -75,17 +95,17 @@ a{text-decoration:none;color:inherit}
 }
 .uav{
   width:28px;height:28px;border-radius:50%;
-  background:linear-gradient(135deg,var(--gold),var(--gold3));
+  background:linear-gradient(135deg,#8a1010,#b01818);
   display:flex;align-items:center;justify-content:center;
-  font-size:9px;font-weight:700;color:#04060f;font-family:'Orbitron',monospace;
+  font-size:9px;font-weight:700;color:#04060f;font-family:'JetBrains Mono',monospace;
 }
-.ubdg{font-size:8px;font-weight:700;padding:2px 7px;border-radius:8px;font-family:'Orbitron',monospace;letter-spacing:.4px;margin-top:1px}
+.ubdg{font-size:8px;font-weight:700;padding:2px 7px;border-radius:8px;font-family:'JetBrains Mono',monospace;letter-spacing:.4px;margin-top:1px}
 .uba{background:rgba(245,197,24,.12);color:var(--gold);border:1px solid rgba(245,197,24,.2)}
-.ubv{background:rgba(64,196,255,.1);color:var(--info);border:1px solid rgba(64,196,255,.2)}
+.ubv{background:rgba(30,111,170,.12);color:var(--info2);border:1px solid rgba(30,111,170,.2)}
 .lbtn{
   background:transparent;border:1px solid var(--bdr2);color:var(--t2);
   padding:5px 12px;border-radius:20px;font-size:10px;cursor:pointer;
-  font-family:'Orbitron',monospace;transition:all .25s;letter-spacing:.2px;
+  font-family:'JetBrains Mono',monospace;transition:all .25s;letter-spacing:.2px;
 }
 .lbtn:hover{background:var(--crit2);border-color:var(--crit);color:#fff}
 
@@ -98,7 +118,7 @@ a{text-decoration:none;color:inherit}
   overflow-y:auto;height:100%;
 }
 .nav-sec{
-  font-family:'Orbitron',monospace;font-size:9px;color:var(--t3);
+  font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);
   letter-spacing:1.5px;text-transform:uppercase;padding:16px 16px 5px;font-weight:600;
 }
 .nav-link{
@@ -110,16 +130,16 @@ a{text-decoration:none;color:inherit}
 .nav-link.active{color:var(--gold);border-left-color:var(--gold);background:rgba(245,197,24,.08);font-weight:600}
 .ni{width:15px;height:15px;flex-shrink:0;opacity:.6}
 .nav-link.active .ni{opacity:1}
-.nbdg{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:7px;font-family:'Orbitron',monospace}
-.nb-r{background:rgba(255,23,68,.15);color:var(--crit);border:1px solid rgba(255,23,68,.2)}
-.nb-w{background:rgba(255,171,0,.12);color:var(--warn);border:1px solid rgba(255,171,0,.2)}
-.nb-b{background:rgba(64,196,255,.1);color:var(--info);border:1px solid rgba(64,196,255,.2)}
+.nbdg{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:7px;font-family:'JetBrains Mono',monospace}
+.nb-r{background:rgba(184,48,48,.15);color:var(--crit2);border:1px solid rgba(184,48,48,.2)}
+.nb-w{background:rgba(200,120,32,.12);color:var(--warn2);border:1px solid rgba(200,120,32,.2)}
+.nb-b{background:rgba(30,111,170,.12);color:var(--info2);border:1px solid rgba(30,111,170,.2)}
 
 .main{flex:1;overflow-y:auto;padding:16px 20px 24px}
 
 /* ── SECTION HEADER ── */
 .sh{
-  font-family:'Orbitron',monospace;font-size:10px;font-weight:700;
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;
   color:var(--t2);letter-spacing:1.5px;text-transform:uppercase;
   margin-bottom:12px;display:flex;align-items:center;gap:10px;
 }
@@ -147,8 +167,8 @@ a{text-decoration:none;color:inherit}
 .kpi:hover{transform:translateY(-3px)}
 .kt{position:absolute;top:0;left:0;width:100%;height:3px;border-radius:var(--r2) var(--r2) 0 0}
 .k-icon{position:absolute;right:14px;top:14px;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;opacity:.15}
-.klab{font-size:11px;color:var(--t2);letter-spacing:.5px;text-transform:uppercase;font-family:'Inter',sans-serif;font-weight:600;margin-bottom:6px}
-.kval{font-family:'Orbitron',monospace;font-size:30px;font-weight:700;line-height:1;margin-bottom:5px}
+.klab{font-size:11px;color:var(--t2);letter-spacing:.5px;text-transform:uppercase;font-family:'Sora',sans-serif;font-weight:600;margin-bottom:6px}
+.kval{font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:700;line-height:1;margin-bottom:5px}
 .ksub{font-size:12px;color:var(--t2);margin-bottom:8px}
 .kbar{background:var(--bg4);border-radius:4px;height:4px;overflow:hidden;margin-bottom:5px}
 .kfill{height:100%;border-radius:4px;transition:width 1.5s cubic-bezier(.4,0,.2,1)}
@@ -161,7 +181,7 @@ a{text-decoration:none;color:inherit}
 }
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)}
 .chdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.ctit{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--t2);letter-spacing:.6px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.ctit{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--t2);letter-spacing:.6px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
 .cdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 
 /* ── GAUGES ── */
@@ -170,8 +190,8 @@ a{text-decoration:none;color:inherit}
 .g-item:hover{background:var(--bg4);border-color:var(--bdr2)}
 .gc{position:relative}
 .gc-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
-.gval{font-family:'Orbitron',monospace;font-weight:700;line-height:1}
-.gsub{font-size:9px;color:var(--t2);font-family:'Orbitron',monospace;letter-spacing:.3px;margin-top:2px;text-transform:uppercase;font-weight:600}
+.gval{font-family:'JetBrains Mono',monospace;font-weight:700;line-height:1}
+.gsub{font-size:9px;color:var(--t2);font-family:'JetBrains Mono',monospace;letter-spacing:.3px;margin-top:2px;text-transform:uppercase;font-weight:600}
 .glbl{font-size:11px;color:var(--t2);margin-top:6px;text-align:center;font-weight:600}
 
 /* ── COMPLIANCE BARS ── */
@@ -179,7 +199,7 @@ a{text-decoration:none;color:inherit}
 .cb-lbl{font-size:12px;color:var(--t1);width:155px;flex-shrink:0;font-weight:600}
 .cb-track{flex:1;background:var(--bg4);border-radius:4px;height:7px;overflow:hidden}
 .cb-fill{height:100%;border-radius:4px;transition:width 1.5s cubic-bezier(.4,0,.2,1)}
-.cb-pct{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;width:44px;text-align:right;flex-shrink:0}
+.cb-pct{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;width:44px;text-align:right;flex-shrink:0}
 .cb-sub{font-size:11px;color:var(--t3);margin:-5px 0 9px 158px;font-weight:500}
 
 /* ── ISSUE ALERTS ── */
@@ -191,35 +211,35 @@ a{text-decoration:none;color:inherit}
 .issue-ok{border-left-color:var(--ok)}
 .it{font-size:11px;font-weight:600;color:var(--t1);margin-bottom:2px}
 .id{font-size:12px;color:var(--t2)}
-.im{font-size:10px;color:var(--t3);font-family:'Orbitron',monospace;margin-top:3px;letter-spacing:.2px;font-weight:600}
+.im{font-size:10px;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-top:3px;letter-spacing:.2px;font-weight:600}
 
 /* ── BADGES ── */
-.bdg{display:inline-flex;align-items:center;padding:3px 9px;border-radius:8px;font-size:10px;font-weight:700;font-family:'Orbitron',monospace;letter-spacing:.2px}
-.b-ok{background:rgba(0,230,118,.1);color:var(--ok);border:1px solid rgba(0,230,118,.2)}
-.b-warn{background:rgba(255,171,0,.1);color:var(--warn);border:1px solid rgba(255,171,0,.2)}
-.b-crit{background:rgba(255,23,68,.1);color:var(--crit);border:1px solid rgba(255,23,68,.2)}
-.b-info{background:rgba(64,196,255,.1);color:var(--info);border:1px solid rgba(64,196,255,.2)}
-.b-gold{background:rgba(245,197,24,.1);color:var(--gold);border:1px solid rgba(245,197,24,.2)}
-.b-purple{background:rgba(224,64,251,.1);color:var(--purple);border:1px solid rgba(224,64,251,.2)}
+.bdg{display:inline-flex;align-items:center;padding:3px 9px;border-radius:8px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:.2px}
+.b-ok{background:rgba(26,158,92,.12);color:var(--ok2);border:1px solid rgba(26,158,92,.2)}
+.b-warn{background:rgba(200,120,32,.12);color:var(--warn2);border:1px solid rgba(200,120,32,.2)}
+.b-crit{background:rgba(184,48,48,.12);color:var(--crit2);border:1px solid rgba(184,48,48,.2)}
+.b-info{background:rgba(30,111,170,.12);color:var(--info2);border:1px solid rgba(30,111,170,.2)}
+.b-gold{background:rgba(200,152,14,.12);color:var(--gold2);border:1px solid rgba(200,152,14,.2)}
+.b-purple{background:rgba(115,64,160,.12);color:var(--purple2);border:1px solid rgba(115,64,160,.2)}
 .b-gray{background:rgba(255,255,255,.05);color:var(--t2);border:1px solid var(--bdr2)}
-.b-teal{background:rgba(29,233,182,.1);color:var(--teal);border:1px solid rgba(29,233,182,.2)}
+.b-teal{background:rgba(18,122,104,.12);color:var(--teal2);border:1px solid rgba(18,122,104,.2)}
 
 /* ── MINI STATS ROW ── */
 .msr{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr)}
 .ms{flex:1;background:var(--bg3);border-radius:9px;padding:9px 5px;text-align:center;border:1px solid var(--bdr)}
-.msv{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;line-height:1}
+.msv{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;line-height:1}
 .msl{font-size:10px;color:var(--t2);margin-top:3px;letter-spacing:.2px;text-transform:uppercase;font-weight:600}
 
 /* ── STAT ROWS ── */
 .sr{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bdr)}
 .sr:last-child{border-bottom:none}
 .srl{font-size:12px;color:var(--t2);display:flex;align-items:center;gap:6px;font-weight:500}
-.srv{font-family:'Orbitron',monospace;font-size:14px;font-weight:700}
+.srv{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700}
 
 /* ── TABLE ── */
 .tw{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:11px}
-th{padding:9px 10px;background:rgba(255,255,255,.05);color:var(--t2);font-size:10px;font-weight:700;text-align:left;border-bottom:1px solid var(--bdr);font-family:'Orbitron',monospace;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap}
+th{padding:9px 10px;background:rgba(255,255,255,.05);color:var(--t2);font-size:10px;font-weight:700;text-align:left;border-bottom:1px solid var(--bdr);font-family:'JetBrains Mono',monospace;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap}
 td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);color:var(--t1);vertical-align:middle;font-size:12px}
 tr:last-child td{border-bottom:none}
 tbody tr{transition:background .15s}
@@ -231,8 +251,8 @@ tbody tr:hover td{background:rgba(255,255,255,.04)}
 .ld{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
 /* ── COLORS ── */
-.vok{color:var(--ok)} .vw{color:var(--warn)} .vc{color:var(--crit)}
-.vi{color:var(--info)} .vg{color:var(--gold)} .vp{color:var(--purple)} .vt{color:var(--teal)}
+.vok{color:var(--ok2)} .vw{color:var(--warn2)} .vc{color:var(--crit2)}
+.vi{color:var(--info2)} .vg{color:var(--gold2)} .vp{color:var(--purple2)} .vt{color:var(--teal2)}
 
 /* ── LIVE FLASH ── */
 @keyframes flash{0%{background:rgba(0,230,118,.18)}100%{background:transparent}}
@@ -243,7 +263,7 @@ tbody tr:hover td{background:rgba(255,255,255,.04)}
   position:fixed;bottom:24px;right:24px;
   background:var(--bg3);border:1px solid rgba(0,230,118,.3);
   border-radius:12px;padding:11px 18px;font-size:11px;color:var(--ok);
-  font-family:'Orbitron',monospace;letter-spacing:.3px;
+  font-family:'JetBrains Mono',monospace;letter-spacing:.3px;
   display:none;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.5),var(--glow-ok);
   align-items:center;gap:9px;opacity:0;transform:translateY(12px);transition:all .4s;
 }
@@ -281,8 +301,8 @@ tbody tr:hover td{background:rgba(255,255,255,.04)}
       </svg>
     </div>
     <div>
-      <div class="brand-name">HDEC</div>
-      <div class="brand-sub">Al henakiya 1100 MW</div>
+      <div class="brand-name">POWER CHINA HDEC</div>
+      <div class="brand-sub">Al Henakiya 1100 MW Solar Power Plant</div>
     </div>
   </div>
 
@@ -297,13 +317,13 @@ tbody tr:hover td{background:rgba(255,255,255,.04)}
   <div class="top-right">
     <a href="{% url 'sync' %}" class="sync-pill">
       <div id="syncDot" class="{% if state.download_ok %}live{% elif state.download_ok == False %}error{% else %}syncing{% endif %}"></div>
-      <span id="syncLabel" style="font-family:'Orbitron',monospace;font-size:9px;color:var(--t2)">{% if state.download_ok %}LIVE{% elif state.download_ok == False %}ERROR{% else %}INIT{% endif %}</span>
-      <span id="syncTimer" style="font-family:'Orbitron',monospace;font-size:9px;color:var(--t3);min-width:28px;text-align:right"></span>
+      <span id="syncLabel" style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t2)">{% if state.download_ok %}LIVE{% elif state.download_ok == False %}ERROR{% else %}INIT{% endif %}</span>
+      <span id="syncTimer" style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);min-width:28px;text-align:right"></span>
     </a>
     <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.03);border:1px solid var(--bdr2);border-radius:20px;padding:5px 14px">
       <div style="width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)"></div>
-      <span style="font-family:'Orbitron',monospace;font-size:9px;color:var(--t2)">Al henakiya HDEC</span>
-      <span id="v-last-parse" style="font-family:'Orbitron',monospace;font-size:9px;color:var(--t3)">{{ last_parse }}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t2)">Al Rajhi Solar</span>
+      <span id="v-last-parse" style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3)">{{ last_parse }}</span>
     </div>
   </div>
 </div>
@@ -312,13 +332,17 @@ tbody tr:hover td{background:rgba(255,255,255,.04)}
 <div class="layout">
   <aside class="sidebar">
     <div style="padding:16px 16px 8px;margin-top:4px">
-      <div style="font-size:9px;color:var(--t3);font-family:'Orbitron',monospace;letter-spacing:1px">MARCH 2026</div>
+      <div style="font-size:9px;color:var(--t3);font-family:'JetBrains Mono',monospace;letter-spacing:1px">MARCH 2026</div>
       <div style="font-size:11px;color:var(--gold);font-weight:500;margin-top:2px">Week 1–2 Report</div>
     </div>
-    <div class="nav-sec">Overview</div>
-    <a href="{% url 'overview' %}" class="nav-link {% if request.resolver_match.url_name == 'overview' %}active{% endif %}">
-      <svg class="ni" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
-      Dashboard
+    <div class="nav-sec">Navigation</div>
+    <a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+      <svg class="ni" viewBox="0 0 16 16" fill="none"><path d="M2 6.5L8 2l6 4.5V14a1 1 0 01-1 1H3a1 1 0 01-1-1z" stroke="currentColor" stroke-width="1.4"/><path d="M6 15V9h4v6" stroke="currentColor" stroke-width="1.4"/></svg>
+      Home
+    </a>
+    <a href="{% url 'daily_report' %}" class="nav-link {% if request.resolver_match.url_name == 'daily_report' %}active{% endif %}">
+      <svg class="ni" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Daily Report
     </a>
     <div class="nav-sec">Maintenance</div>
     <a href="{% url 'pm' %}" class="nav-link {% if request.resolver_match.url_name == 'pm' %}active{% endif %}">
@@ -347,6 +371,10 @@ tbody tr:hover td{background:rgba(255,255,255,.04)}
       <svg class="ni" viewBox="0 0 16 16" fill="none"><path d="M1 8s2.8-5 7-5 7 5 7 5-2.8 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2.2" fill="currentColor"/></svg>
       Observations
     </a>
+    <div class="nav-sec">Management</div>
+    <a href="{% url 'staff' %}" class="nav-link {% if request.resolver_match.url_name == 'staff' %}active{% endif %}"><svg class="ni" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Staff</a>
+    <a href="{% url 'documents' %}" class="nav-link {% if request.resolver_match.url_name == 'documents' %}active{% endif %}"><svg class="ni" viewBox="0 0 16 16" fill="none"><rect x="3" y="1" width="10" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 5h4M6 8h4M6 11h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Documents</a>
+    <a href="{% url 'material' %}" class="nav-link {% if request.resolver_match.url_name == 'material' %}active{% endif %}"><svg class="ni" viewBox="0 0 16 16" fill="none"><rect x="1" y="8" width="14" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M4 8V5a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.4"/></svg>Material</a>
     <div class="nav-sec">System</div>
     <a href="{% url 'sync' %}" class="nav-link {% if request.resolver_match.url_name == 'sync' %}active{% endif %}">
       <svg class="ni" viewBox="0 0 16 16" fill="none"><path d="M14 8A6 6 0 112 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10.5 5l3.5 3-3.5 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -359,8 +387,8 @@ tbody tr:hover td{background:rgba(255,255,255,.04)}
     </a>
     <!-- bottom brand -->
     <div style="padding:20px 16px;margin-top:auto">
-      <div style="font-size:8px;color:var(--t3);font-family:'Orbitron',monospace;letter-spacing:1px;line-height:1.8">
-        HDEC<br>v3.0 · March 2026<br>Auto-sync active
+      <div style="font-size:8px;color:var(--t3);font-family:'JetBrains Mono',monospace;letter-spacing:1px;line-height:1.8">
+        POWER CHINA HDEC<br>HDEC CMMS · 2026<br>Auto-sync active
       </div>
     </div>
   </aside>
@@ -379,22 +407,22 @@ tbody tr:hover td{background:rgba(255,255,255,.04)}
 
 <script>
 // ── Chart.js defaults ─────────────────────────────────────────────────────────
-Chart.defaults.color = '#4a5c84';
-Chart.defaults.borderColor = '#14203a';
-Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.color = '#7888a8';
+Chart.defaults.borderColor = '#141e30';
+Chart.defaults.font.family = "'Sora', sans-serif";
 
 const CD = {
   responsive:true, maintainAspectRatio:false,
   plugins:{legend:{display:false}},
   scales:{
-    x:{ticks:{color:'#8a9dc4',font:{size:11}},grid:{display:false},border:{display:false}},
-    y:{ticks:{color:'#8a9dc4',font:{size:11}},grid:{color:'rgba(40,55,90,.8)'},border:{display:false}}
+    x:{ticks:{color:'#7888a8',font:{size:11}},grid:{display:false},border:{display:false}},
+    y:{ticks:{color:'#7888a8',font:{size:11}},grid:{color:'rgba(20,30,48,.9)'},border:{display:false}}
   }
 };
 const PD={responsive:true,maintainAspectRatio:false,cutout:'0%',plugins:{legend:{display:false}}};
 const DD={responsive:true,maintainAspectRatio:false,cutout:'66%',plugins:{legend:{display:false}}};
-const CL=['#40c4ff','#1de9b6','#ffab00','#e040fb','#f5c518','#ff6e40','#82b1ff','#00e676','#ff1744','#ce93d8'];
-const CL2=['rgba(64,196,255,.7)','rgba(29,233,182,.7)','rgba(255,171,0,.7)','rgba(224,64,251,.7)','rgba(245,197,24,.7)','rgba(255,110,64,.7)','rgba(130,177,255,.7)'];
+const CL=['#2888cc','#19a08a','#e89030','#9060c0','#e5ad1a','#b84828','#4a7ab8','#22c068','#d94040','#7868c0'];
+const CL2=['rgba(40,136,204,.7)','rgba(25,160,138,.7)','rgba(232,144,48,.7)','rgba(144,96,192,.7)','rgba(229,173,26,.7)','rgba(184,72,40,.7)','rgba(74,122,184,.7)'];
 
 // ── Gauge (canvas arc) ────────────────────────────────────────────────────────
 function drawGauge(id, pct, color, bg, sz, glow) {

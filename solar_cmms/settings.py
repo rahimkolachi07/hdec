@@ -1,6 +1,6 @@
 from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = 'solar-cmms-secret-key-change-in-production-2026'
+SECRET_KEY = 'hdec-solar-cmms-production-key-2026'
 DEBUG = True
 ALLOWED_HOSTS = ['*']
 INSTALLED_APPS = [
@@ -28,17 +28,26 @@ USE_TZ = True
 STATIC_URL = '/static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ── NO LOGIN REQUIRED — dashboard is open ─────────────────────────────────────
-# LOGIN_URL and LOGIN_REDIRECT_URL are not needed since we removed authentication
+# ── Company Info ──────────────────────────────────────────────────────────────
+COMPANY_NAME     = "POWER CHINA HDEC"
+PROJECT_NAME     = "Al Henakiya Solar Power Plant"
+PROJECT_CAPACITY = "1100 MW"
+PROJECT_LOCATION = "Al Henakiya, Saudi Arabia"
 
-# ── Google Sheet config ────────────────────────────────────────────────────────
-GOOGLE_SHEET_ID = "1EKrRePyskWHJOPIljD7GCGAvyO4B9OMz80o8X4Cr1Ik"
+# ── Google Sheets ─────────────────────────────────────────────────────────────
+# Maintenance tracking sheet
+GOOGLE_SHEET_ID       = "1EKrRePyskWHJOPIljD7GCGAvyO4B9OMz80o8X4Cr1Ik"
+SHEET_LOCAL_PATH      = str(BASE_DIR / "solar_plant_data.xlsx")
+
+# Daily activity sheet
+DAILY_SHEET_ID        = "1HbzHNFdtXWBiqXk7HSmq2RI6u8AwOh2vvO3WYR3YgC8"
+DAILY_SHEET_LOCAL_PATH= str(BASE_DIR / "daily_activity.xlsx")
+
 SHEET_DOWNLOAD_INTERVAL_MINUTES = 5
-SHEET_LOCAL_PATH = str(BASE_DIR / "solar_plant_data.xlsx")
 
 LOGGING = {
-    'version': 1, 'disable_existing_loggers': False,
-    'formatters': {'simple': {'format': '[%(levelname)s] %(name)s: %(message)s'}},
-    'handlers': {'console': {'class': 'logging.StreamHandler', 'formatter': 'simple'}},
-    'loggers': {'maintenance': {'handlers': ['console'], 'level': 'INFO', 'propagate': False}},
+    'version':1,'disable_existing_loggers':False,
+    'formatters':{'simple':{'format':'[%(levelname)s] %(name)s: %(message)s'}},
+    'handlers':{'console':{'class':'logging.StreamHandler','formatter':'simple'}},
+    'loggers':{'maintenance':{'handlers':['console'],'level':'INFO','propagate':False}},
 }

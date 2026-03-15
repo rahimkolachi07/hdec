@@ -1,0 +1,40 @@
+{% extends 'maintenance/base.html' %}
+{% block title %}Staff{% endblock %}
+{% block content %}
+<div class="sh">staff register — {{ total }} team members</div>
+<div class="g4">
+  <div class="kpi"><div class="kt" style="background:linear-gradient(90deg,var(--ok),var(--teal))"></div><div class="klab">On Site Today</div><div class="kval vok">{{ on_site }}</div><div class="ksub">Active team members</div><div class="kbar"><div class="kfill" style="width:{% widthratio on_site total 100 %}%;background:var(--ok)"></div></div></div>
+  <div class="kpi"><div class="kt" style="background:linear-gradient(90deg,var(--warn),var(--gold))"></div><div class="klab">On Leave</div><div class="kval vw">{{ on_leave }}</div><div class="ksub">Scheduled absence</div><div class="kbar"><div class="kfill" style="width:{% widthratio on_leave total 100 %}%;background:var(--warn)"></div></div></div>
+  <div class="kpi"><div class="kt" style="background:linear-gradient(90deg,var(--info),var(--sky))"></div><div class="klab">In Training</div><div class="kval vi">{{ training }}</div><div class="ksub">Skills development</div><div class="kbar"><div class="kfill" style="width:{% widthratio training total 100 %}%;background:var(--info)"></div></div></div>
+  <div class="kpi"><div class="kt" style="background:linear-gradient(90deg,var(--purple),var(--sky))"></div><div class="klab">Total Team</div><div class="kval vp">{{ total }}</div><div class="ksub">Full complement</div><div class="kbar"><div class="kfill" style="width:100%;background:var(--purple)"></div></div></div>
+</div>
+<div class="g2">
+  <div class="card">
+    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--ok)"></div>Day shift — {{ day_shift|length }} members</div></div>
+    {% for s in day_shift %}
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bdr)">
+      <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#c9970a);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:#04060f;flex-shrink:0">{{ s.name|slice:":2"|upper }}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--t1)">{{ s.name }}</div><div style="font-size:11px;color:var(--t2)">{{ s.role }}</div></div>
+      <span class="bdg b-ok">Day</span>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="card">
+    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--info)"></div>Night shift + other — {{ night_shift|length }} members</div></div>
+    {% for s in night_shift %}
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bdr)">
+      <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--info),var(--sky));display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:#04060f;flex-shrink:0">{{ s.name|slice:":2"|upper }}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--t1)">{{ s.name }}</div><div style="font-size:11px;color:var(--t2)">{{ s.role }}</div></div>
+      <span class="bdg b-info">Night</span>
+    </div>
+    {% endfor %}
+    {% for s in staff %}{% if s.status != 'active' %}
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bdr)">
+      <div style="width:38px;height:38px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--t3);flex-shrink:0">{{ s.name|slice:":2"|upper }}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--t2)">{{ s.name }}</div><div style="font-size:11px;color:var(--t3)">{{ s.role }}</div></div>
+      <span class="bdg {% if s.status == 'leave' %}b-warn{% else %}b-info{% endif %}">{{ s.status|title }}</span>
+    </div>
+    {% endif %}{% endfor %}
+  </div>
+</div>
+{% endblock %}
