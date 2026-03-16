@@ -3,26 +3,56 @@
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 
-<!-- HERO HEADER with search -->
-<div style="background:linear-gradient(135deg,var(--bg3) 0%,var(--bg2) 100%);border:1px solid var(--bdr2);border-radius:var(--r2);padding:22px 28px;margin-bottom:16px;position:relative;overflow:hidden">
-  <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#8a1010,var(--gold2),var(--info2))"></div>
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
-    <div>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--gold2);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">Power China HDEC &middot; CMMS v3.0</div>
-      <div style="font-size:20px;font-weight:700;color:var(--t1);letter-spacing:-.3px">Al Henakiya Solar Power Plant</div>
-      <div style="font-size:12px;color:var(--t2);margin-top:4px;font-family:'JetBrains Mono',monospace">1,100 MW &middot; Al Henakiya, Saudi Arabia &middot; March 2026</div>
+<!-- ══ CHATBOT HERO ══ -->
+<div style="background:linear-gradient(160deg,var(--bg3) 0%,var(--bg2) 60%,var(--bg1) 100%);border:1px solid var(--bdr2);border-radius:var(--r2);padding:28px 28px 20px;margin-bottom:16px;position:relative;overflow:hidden">
+  <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#8a1010,var(--gold2),var(--info2),var(--teal2))"></div>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 70% 0%,rgba(200,152,14,.05),transparent 60%);pointer-events:none"></div>
+
+  <!-- Header -->
+  <div style="text-align:center;margin-bottom:22px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--gold2);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:8px">Power China HDEC &middot; Al Henakiya 1100 MW Solar Power Plant</div>
+    <div style="font-size:26px;font-weight:700;color:var(--t1);letter-spacing:-.5px;margin-bottom:4px">HDEC Bot</div>
+    <div style="font-size:13px;color:var(--t2)">Ask anything about the plant — faults, compliance, staff, equipment, observations</div>
+  </div>
+
+  <!-- Chat messages -->
+  <div id="chatMessages" style="min-height:120px;max-height:280px;overflow-y:auto;margin-bottom:14px;display:flex;flex-direction:column;gap:10px;padding:4px 0">
+    <!-- Welcome message -->
+    <div style="display:flex;gap:10px;align-items:flex-start">
+      <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#8a1010,#b01818);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#e8d0c8;flex-shrink:0">AI</div>
+      <div style="background:var(--bg4);border:1px solid var(--bdr2);border-radius:0 12px 12px 12px;padding:12px 16px;max-width:80%">
+        <div style="font-size:13px;color:var(--t1);line-height:1.6">Hello! I'm HDEC Bot — your AI maintenance assistant for Al Henakiya 1100 MW Solar Plant. I have live access to plant data AND can search your uploaded documents (procedures, reports, checklists). Ask me anything!</div>
+        <div style="font-size:10px;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-top:6px">HDEC Assistant &middot; Al Henakiya 1100 MW</div>
+      </div>
     </div>
-    <div style="position:relative;width:360px;flex-shrink:0">
-      <input id="searchBox" type="text" placeholder="Search blocks, faults, equipment..."
-        style="width:100%;background:var(--bg4);border:1px solid var(--bdr2);border-radius:30px;padding:11px 44px 11px 18px;font-size:13px;color:var(--t1);font-family:'Sora',sans-serif;outline:none;transition:border-color .2s"
-        onfocus="this.style.borderColor='var(--gold2)'" onblur="this.style.borderColor='var(--bdr2)'"
-        oninput="doSearch(this.value)">
-      <svg style="position:absolute;right:16px;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="var(--t1)" stroke-width="1.4"/><path d="M10.5 10.5l3.5 3.5" stroke="var(--t1)" stroke-width="1.4" stroke-linecap="round"/></svg>
-      <div id="searchDrop" style="position:absolute;top:calc(100%+6px);left:0;right:0;background:var(--bg3);border:1px solid var(--bdr2);border-radius:14px;overflow:hidden;z-index:200;display:none"></div>
+    <!-- Quick suggestions -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;padding-left:42px">
+      <button onclick="askQuick('What is the PM compliance this month?')" class="qbtn">PM compliance this month</button>
+      <button onclick="askQuick('How many tracker faults are pending?')" class="qbtn">Pending tracker faults</button>
+      <button onclick="askQuick('Show me all critical SS issues')" class="qbtn">Critical SS issues</button>
+      <button onclick="askQuick('What is the overall monthly CM rate?')" class="qbtn">Monthly CM rate</button>
+      <button onclick="askQuick('Staff on site today?')" class="qbtn">Staff on site</button>
+      <button onclick="askQuick('Give me a full plant summary')" class="qbtn">Full plant summary</button>
     </div>
   </div>
+
+  <!-- Input bar -->
+  <div style="display:flex;gap:10px;align-items:center">
+    <div style="flex:1;position:relative">
+      <input id="chatInput" type="text" placeholder="Ask about plant status, faults, compliance, staff..."
+        style="width:100%;background:var(--bg4);border:2px solid var(--bdr2);border-radius:30px;padding:14px 52px 14px 20px;font-size:14px;color:var(--t1);font-family:'Sora',sans-serif;outline:none;transition:border-color .2s"
+        onfocus="this.style.borderColor='var(--gold2)'" onblur="this.style.borderColor='var(--bdr2)'"
+        onkeydown="if(event.key==='Enter')sendChat()">
+      <button onclick="sendChat()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#8a1010,#b01818);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s" onmouseover="this.style.transform='translateY(-50%) scale(1.1)'" onmouseout="this.style.transform='translateY(-50%) scale(1)'">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M9 4l5 4-5 4" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div style="font-size:10px;color:var(--t3);font-family:'JetBrains Mono',monospace;text-align:center;flex-shrink:0">Powered by<br>OpenAI</div>
+  </div>
+
+  <!-- Alert pills below chatbot -->
   {% if alerts %}
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--bdr)">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--bdr)">
     {% for a in alerts %}
     <div style="display:flex;align-items:center;gap:7px;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:500;background:{% if a.type == 'crit' %}rgba(184,48,48,.15){% else %}rgba(200,120,32,.12){% endif %};border:1px solid {% if a.type == 'crit' %}rgba(184,48,48,.3){% else %}rgba(200,120,32,.25){% endif %};color:{% if a.type == 'crit' %}var(--crit2){% else %}var(--warn2){% endif %}">
       <div style="width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;animation:blink 1.4s infinite"></div>{{ a.msg }}
@@ -32,150 +62,417 @@
   {% endif %}
 </div>
 
-<!-- LIVE KPI ROW -->
-<div class="g5" style="margin-bottom:16px">
-  <div class="kpi" style="cursor:default"><div class="kt" style="background:linear-gradient(90deg,var(--ok2),var(--teal2))"></div><div class="klab">PM Compliance</div><div class="kval vok">{{ w1pm.compliance }}%</div><div class="ksub">{{ w1pm.done }}/{{ w1pm.sched }} tasks W1</div><div class="kbar"><div class="kfill" style="width:{{ w1pm.compliance }}%;background:var(--ok2)"></div></div><div class="kfoot"><span class="vok">{{ w1pm.done }} done</span><span class="vc">{{ w1pm.pending }} left</span></div></div>
-  <div class="kpi" style="cursor:default"><div class="kt" style="background:linear-gradient(90deg,var(--warn2),var(--gold2))"></div><div class="klab">CM Compliance</div><div class="kval vw">{{ w1cm.compliance }}%</div><div class="ksub">{{ w1cm.done }}/{{ w1cm.sched }} tasks W1</div><div class="kbar"><div class="kfill" style="width:{{ w1cm.compliance }}%;background:var(--warn2)"></div></div><div class="kfoot"><span class="vok">{{ w1cm.done }} done</span><span class="vc">{{ w1cm.pending }} left</span></div></div>
-  <div class="kpi" style="cursor:default"><div class="kt" style="background:linear-gradient(90deg,var(--info2),var(--sky))"></div><div class="klab">Tracker Faults</div><div class="kval vi">{{ tr.rate }}%</div><div class="ksub">{{ tr.pending }} open of {{ tr.total }}</div><div class="kbar"><div class="kfill" style="width:{{ tr.rate }}%;background:var(--info2)"></div></div><div class="kfoot"><span class="vok">{{ tr.done }} resolved</span><span class="vc">{{ tr.pending }} open</span></div></div>
-  <div class="kpi" style="cursor:default"><div class="kt" style="background:linear-gradient(90deg,var(--ok2),var(--teal2))"></div><div class="klab">Strings &amp; SCB</div><div class="kval vok">{{ st.rate }}%</div><div class="ksub">{{ st.done }}/{{ st.total }} &middot; SCB {{ scb.done }}/{{ scb.total }}</div><div class="kbar"><div class="kfill" style="width:{{ st.rate }}%;background:var(--teal2)"></div></div><div class="kfoot"><span class="vok">Strings done</span><span class="vok">SCB 100%</span></div></div>
-  <div class="kpi" style="cursor:default"><div class="kt" style="background:linear-gradient(90deg,{% if sseq.active_count %}var(--crit2),var(--coral){% else %}var(--ok2),var(--teal2){% endif %})"></div><div class="klab">Critical Issues</div><div class="kval {% if sseq.active_count %}vc{% else %}vok{% endif %}">{{ sseq.active_count }}</div><div class="ksub">SS active &middot; {{ ssob.pending }} SS obs pending</div><div class="kbar"><div class="kfill" style="width:{% if sseq.active_count %}10{% else %}100{% endif %}%;background:{% if sseq.active_count %}var(--crit2){% else %}var(--ok2){% endif %}"></div></div><div class="kfoot"><span>{{ pveq.active }} PV active</span><span>{{ pvob.open }} PV obs</span></div></div>
-</div>
-
-<!-- MODULE GRID -->
-<div class="sh">maintenance modules &mdash; click to explore</div>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+<!-- ══ MODULE CARDS ══ -->
+<div class="sh">quick access &mdash; all modules</div>
+<div class="g4" style="margin-bottom:16px">
   {% for m in modules %}
-  <a href="/{{ m.id }}/" class="mod-card">
-    <div style="position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0;background:{{ m.color }}"></div>
-    <div style="position:absolute;top:13px;right:13px;width:7px;height:7px;border-radius:50%;background:{% if m.status == 'ok' %}var(--ok2){% elif m.status == 'warn' %}var(--warn2){% else %}var(--crit2){% endif %}{% if m.status != 'ok' %};animation:blink 1.4s infinite{% endif %}"></div>
-    <div style="width:40px;height:40px;border-radius:10px;background:{{ m.color_bg }};display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:{{ m.color }};margin-bottom:12px;letter-spacing:.3px">{{ m.icon }}</div>
-    <div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px">{{ m.name }}</div>
-    <div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:{{ m.color }};line-height:1;margin-bottom:3px">{{ m.value }}</div>
-    <div style="font-size:10px;color:var(--t2);font-weight:500;margin-bottom:2px">{{ m.label }}</div>
-    <div style="font-size:10px;color:var(--t3)">{{ m.sub }}</div>
-    <div style="height:2px;background:var(--bg4);border-radius:2px;margin-top:10px;overflow:hidden"><div class="mod-bar-fill" style="height:100%;border-radius:2px;background:{{ m.color }};width:0%;transition:width 1.2s ease" data-pct="{{ m.value }}"></div></div>
+  <a href="/{{ m.id }}/" style="background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r2);padding:16px 14px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s;display:block;cursor:pointer;text-decoration:none" onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='{{ m.color }}'" onmouseout="this.style.transform='translateY(0)';this.style.borderColor='var(--bdr)'">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r2) var(--r2) 0 0;background:{{ m.color }}"></div>
+    <div style="position:absolute;top:12px;right:12px;width:7px;height:7px;border-radius:50%;background:{% if m.status == 'ok' %}var(--ok2){% elif m.status == 'warn' %}var(--warn2){% else %}var(--crit2){% endif %}{% if m.status != 'ok' %};animation:blink 1.4s infinite{% endif %}"></div>
+    <div style="width:38px;height:38px;border-radius:9px;background:{{ m.color_bg }};display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:{{ m.color }};margin-bottom:10px">{{ m.icon }}</div>
+    <div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px">{{ m.name }}</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:{{ m.color }};line-height:1;margin-bottom:2px">{{ m.value }}</div>
+    <div style="font-size:10px;color:var(--t2);font-weight:500">{{ m.label }}</div>
+    <div style="font-size:10px;color:var(--t3);margin-top:1px">{{ m.sub }}</div>
+    <div style="height:2px;background:var(--bg4);border-radius:2px;margin-top:10px;overflow:hidden"><div class="mbar" style="height:100%;border-radius:2px;background:{{ m.color }};width:0%;transition:width 1.2s ease" data-pct="{{ m.value }}"></div></div>
   </a>
   {% endfor %}
 </div>
 
-<!-- CHARTS + DAILY + STAFF + ISSUES -->
-<div class="sh">live performance &amp; operations</div>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
-  <div class="card">
-    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--gold2)"></div>Compliance &mdash; all weeks</div></div>
-    <div style="position:relative;height:160px"><canvas id="c-comp"></canvas></div>
+<!-- ══ MONTHLY DATA ══ -->
+<div class="sh">monthly performance &mdash; march 2026 complete</div>
+
+<!-- Monthly KPI summary -->
+<div class="g4" style="margin-bottom:12px">
+  <div class="kpi" style="cursor:default;border-color:rgba(34,192,104,.2)">
+    <div class="kt" style="background:linear-gradient(90deg,var(--ok2),var(--teal2))"></div>
+    <div style="position:absolute;top:12px;right:12px;font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:.8px">MONTHLY</div>
+    <div class="klab">PM Total — March</div>
+    <div class="kval vok">{{ pm_mo_pct }}%</div>
+    <div class="ksub">{{ pm_mo_done }}/{{ pm_mo_sched }} tasks all weeks</div>
+    <div class="kbar"><div class="kfill" style="width:{{ pm_mo_pct }}%;background:var(--ok2)"></div></div>
+    <div class="kfoot"><span class="vok">{{ pm_mo_done }} done</span><span style="color:var(--t3)">{{ pm_mo_sched }} scheduled</span></div>
   </div>
-  <div class="card">
-    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--info2)"></div>Fault volume by type</div></div>
-    <div style="position:relative;height:130px"><canvas id="c-faults"></canvas></div>
-    <div class="lgnd" style="margin-top:8px" id="faults-lgnd"></div>
+  <div class="kpi" style="cursor:default;border-color:rgba(232,144,48,.2)">
+    <div class="kt" style="background:linear-gradient(90deg,var(--warn2),var(--gold2))"></div>
+    <div style="position:absolute;top:12px;right:12px;font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:.8px">MONTHLY</div>
+    <div class="klab">CM Total — March</div>
+    <div class="kval vw">{{ cm_mo_pct }}%</div>
+    <div class="ksub">{{ cm_mo_done }}/{{ cm_mo_sched }} tasks all weeks</div>
+    <div class="kbar"><div class="kfill" style="width:{{ cm_mo_pct }}%;background:var(--warn2)"></div></div>
+    <div class="kfoot"><span class="vok">{{ cm_mo_done }} done</span><span style="color:var(--t3)">{{ cm_mo_sched }} scheduled</span></div>
   </div>
-  <div class="card">
-    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--ok2)"></div>Resolution rates</div></div>
-    <div style="position:relative;height:160px"><canvas id="c-rates"></canvas></div>
+  <div class="kpi" style="cursor:default;border-color:rgba(40,136,204,.2)">
+    <div class="kt" style="background:linear-gradient(90deg,var(--info2),var(--sky))"></div>
+    <div style="position:absolute;top:12px;right:12px;font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:.8px">ALL TIME</div>
+    <div class="klab">Trackers — Total</div>
+    <div class="kval vi">{{ tr.rate }}%</div>
+    <div class="ksub">{{ tr.done }}/{{ tr.total }} faults resolved</div>
+    <div class="kbar"><div class="kfill" style="width:{{ tr.rate }}%;background:var(--info2)"></div></div>
+    <div class="kfoot"><span class="vok">{{ tr.done }} done</span><span class="vc">{{ tr.pending }} open</span></div>
+  </div>
+  <div class="kpi" style="cursor:default;border-color:rgba(25,160,138,.2)">
+    <div class="kt" style="background:linear-gradient(90deg,var(--ok2),var(--teal2))"></div>
+    <div style="position:absolute;top:12px;right:12px;font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:.8px">ALL TIME</div>
+    <div class="klab">Strings + SCB</div>
+    <div class="kval vt">{{ st.rate }}%</div>
+    <div class="ksub">{{ st.done }}/{{ st.total }} strings &middot; SCB 100%</div>
+    <div class="kbar"><div class="kfill" style="width:{{ st.rate }}%;background:var(--teal2)"></div></div>
+    <div class="kfoot"><span class="vok">{{ st.done }} strings done</span><span class="vok">{{ scb.done }} SCB done</span></div>
   </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
-  <!-- Daily Activity -->
+<!-- Monthly charts -->
+<div class="g3" style="margin-bottom:12px">
   <div class="card">
-    <div class="chdr">
-      <div class="ctit"><div class="cdot" style="background:var(--info2)"></div>Daily Activity</div>
-      <a href="{% url 'daily_report' %}" style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--info2);background:rgba(30,111,170,.1);border:1px solid rgba(30,111,170,.2);padding:3px 10px;border-radius:20px">View All</a>
+    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--ok2)"></div>PM — scheduled vs done per week</div></div>
+    <div style="position:relative;height:190px"><canvas id="c-pm-monthly"></canvas></div>
+    <div class="msr">
+      <div class="ms"><div class="msv vok">{{ pm_mo_pct }}%</div><div class="msl">Monthly Rate</div></div>
+      <div class="ms"><div class="msv vok">{{ pm_mo_done }}</div><div class="msl">Total Done</div></div>
+      <div class="ms"><div class="msv" style="color:var(--t2)">{{ pm_mo_sched }}</div><div class="msl">Scheduled</div></div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:9px;background:var(--bg3);border-radius:9px;margin-bottom:10px">
-      <div style="width:7px;height:7px;border-radius:50%;background:var(--ok2);box-shadow:0 0 6px var(--ok2);flex-shrink:0"></div>
-      <div style="font-size:11px;font-weight:500;color:var(--t1)">Auto-syncing from Google Sheets</div>
-    </div>
-    <div class="sr"><span class="srl">PM Tasks Today</span><span class="srv vok">{{ w1pm.done }}/{{ w1pm.sched }}</span></div>
-    <div class="sr"><span class="srl">CM Tasks Today</span><span class="srv vw">{{ w1cm.done }}/{{ w1cm.sched }}</span></div>
-    <div class="sr"><span class="srl">Trackers Resolved</span><span class="srv vi">{{ tr.done }}</span></div>
-    <div class="sr"><span class="srl">SS Critical</span><span class="srv {% if sseq.active_count %}vc{% else %}vok{% endif %}">{{ sseq.active_count }}</span></div>
-    <div class="sr"><span class="srl">PV Observations</span><span class="srv vp">{{ pvob.open }} open</span></div>
-    <a href="{% url 'daily_report' %}" style="display:block;margin-top:10px;text-align:center;padding:8px;background:rgba(30,111,170,.08);border:1px solid rgba(30,111,170,.15);border-radius:8px;font-size:11px;color:var(--info2);font-weight:600;font-family:'JetBrains Mono',monospace">Full Daily Report &rarr;</a>
   </div>
+  <div class="card">
+    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--warn2)"></div>CM — scheduled vs done per week</div></div>
+    <div style="position:relative;height:190px"><canvas id="c-cm-monthly"></canvas></div>
+    <div class="msr">
+      <div class="ms"><div class="msv vw">{{ cm_mo_pct }}%</div><div class="msl">Monthly Rate</div></div>
+      <div class="ms"><div class="msv vw">{{ cm_mo_done }}</div><div class="msl">Total Done</div></div>
+      <div class="ms"><div class="msv" style="color:var(--t2)">{{ cm_mo_sched }}</div><div class="msl">Scheduled</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--gold2)"></div>All resolution rates — overview</div></div>
+    <div style="position:relative;height:190px"><canvas id="c-rates"></canvas></div>
+    <div class="msr">
+      <div class="ms"><div class="msv vi">{{ tr.rate }}%</div><div class="msl">Trackers</div></div>
+      <div class="ms"><div class="msv vt">{{ st.rate }}%</div><div class="msl">Strings</div></div>
+      <div class="ms"><div class="msv vp">{{ inv.rate }}%</div><div class="msl">MVPS</div></div>
+      <div class="ms"><div class="msv vok">{{ pveq.rate }}%</div><div class="msl">PV Equip</div></div>
+    </div>
+  </div>
+</div>
 
+<!-- Bottom row: Staff + Issues + Equipment + Observations -->
+<div class="g4">
   <!-- Staff -->
   <div class="card">
-    <div class="chdr">
-      <div class="ctit"><div class="cdot" style="background:var(--sky)"></div>Staff On Site</div>
-      <a href="{% url 'staff' %}" style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--sky);background:rgba(42,122,184,.1);border:1px solid rgba(42,122,184,.2);padding:3px 10px;border-radius:20px">View All</a>
+    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--sky)"></div>Staff</div><a href="{% url 'staff' %}" style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--sky);background:rgba(42,122,184,.1);border:1px solid rgba(42,122,184,.2);padding:3px 9px;border-radius:20px">View</a></div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <div style="flex:1;background:var(--bg3);border-radius:8px;padding:8px;text-align:center;border:1px solid var(--bdr)"><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--ok2)">11</div><div style="font-size:8px;color:var(--t3);text-transform:uppercase;font-weight:600;margin-top:1px">Active</div></div>
+      <div style="flex:1;background:var(--bg3);border-radius:8px;padding:8px;text-align:center;border:1px solid var(--bdr)"><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--warn2)">2</div><div style="font-size:8px;color:var(--t3);text-transform:uppercase;font-weight:600;margin-top:1px">Leave</div></div>
+      <div style="flex:1;background:var(--bg3);border-radius:8px;padding:8px;text-align:center;border:1px solid var(--bdr)"><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--info2)">1</div><div style="font-size:8px;color:var(--t3);text-transform:uppercase;font-weight:600;margin-top:1px">Train</div></div>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <div style="flex:1;background:var(--bg3);border-radius:9px;padding:9px;text-align:center;border:1px solid var(--bdr)"><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--ok2)">11</div><div style="font-size:9px;color:var(--t3);text-transform:uppercase;font-weight:600;margin-top:2px">On Site</div></div>
-      <div style="flex:1;background:var(--bg3);border-radius:9px;padding:9px;text-align:center;border:1px solid var(--bdr)"><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--warn2)">2</div><div style="font-size:9px;color:var(--t3);text-transform:uppercase;font-weight:600;margin-top:2px">On Leave</div></div>
-      <div style="flex:1;background:var(--bg3);border-radius:9px;padding:9px;text-align:center;border:1px solid var(--bdr)"><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--info2)">1</div><div style="font-size:9px;color:var(--t3);text-transform:uppercase;font-weight:600;margin-top:2px">Training</div></div>
-    </div>
-    {% for s in day_staff %}
-    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr)">
-      <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6a0a0a,#901414);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#e8d0c8;flex-shrink:0">{{ s.name|slice:":2"|upper }}</div>
-      <div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:600;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.name }}</div><div style="font-size:10px;color:var(--t3)">{{ s.role }}</div></div>
-      <span class="bdg b-ok" style="font-size:8px">Day</span>
+    {% for s in day_staff|slice:":4" %}
+    <div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--bdr)">
+      <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#6a0a0a,#901414);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:7px;font-weight:700;color:#e8d0c8;flex-shrink:0">{{ s.name|slice:":2"|upper }}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:500;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.name }}</div><div style="font-size:9px;color:var(--t3)">{{ s.role }}</div></div>
     </div>
     {% endfor %}
-    <a href="{% url 'staff' %}" style="display:block;margin-top:10px;text-align:center;padding:7px;background:rgba(42,122,184,.06);border:1px solid rgba(42,122,184,.12);border-radius:8px;font-size:11px;color:var(--sky);font-weight:600;font-family:'JetBrains Mono',monospace">Full Staff Register &rarr;</a>
+    <a href="{% url 'staff' %}" style="display:block;margin-top:8px;text-align:center;padding:6px;background:rgba(42,122,184,.06);border:1px solid rgba(42,122,184,.12);border-radius:7px;font-size:10px;color:var(--sky);font-family:'JetBrains Mono',monospace">All Staff &rarr;</a>
   </div>
 
-  <!-- Active Issues + Equipment -->
+  <!-- Active Issues -->
   <div class="card">
-    <div class="chdr">
-      <div class="ctit"><div class="cdot" style="background:var(--crit2)"></div>Active Issues</div>
-      <span class="bdg b-crit">{{ sseq.active_count }} open</span>
-    </div>
+    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--crit2)"></div>Issues</div><a href="{% url 'equipment' %}" style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--crit2);background:rgba(184,48,48,.1);border:1px solid rgba(184,48,48,.2);padding:3px 9px;border-radius:20px">View</a></div>
     {% for issue in active_issues %}
-    <div class="issue issue-crit">
-      <div style="width:28px;height:28px;border-radius:7px;background:rgba(184,48,48,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L13 11.5H1z" stroke="var(--crit2)" stroke-width="1.3" stroke-linejoin="round"/><path d="M7 6v3M7 10.5v.5" stroke="var(--crit2)" stroke-width="1.3" stroke-linecap="round"/></svg></div>
-      <div><div class="it">{{ issue.equip }} &middot; {{ issue.area }}</div><div class="id">{{ issue.issue|truncatechars:48 }}</div><div class="im">{{ issue.status|upper }} &middot; {{ issue.date }}</div></div>
+    <div style="background:rgba(184,48,48,.08);border:1px solid rgba(184,48,48,.2);border-radius:9px;padding:9px 11px;margin-bottom:7px;border-left:3px solid var(--crit2)">
+      <div style="font-size:11px;font-weight:600;color:var(--t1);margin-bottom:2px">{{ issue.equip }}</div>
+      <div style="font-size:10px;color:var(--t2)">{{ issue.issue|truncatechars:45 }}</div>
+      <div style="font-size:9px;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-top:3px">{{ issue.status|upper }} &middot; {{ issue.date }}</div>
     </div>
     {% empty %}
-    <div style="text-align:center;padding:14px 0"><div style="width:32px;height:32px;border-radius:50%;background:rgba(26,158,92,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 6px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="var(--ok2)" stroke-width="1.8" stroke-linecap="round"/></svg></div><div style="font-size:11px;font-weight:600;color:var(--ok2)">All systems clear</div></div>
+    <div style="text-align:center;padding:20px 0"><div style="width:32px;height:32px;border-radius:50%;background:rgba(26,158,92,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 6px"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 7.5l3 3 6-6" stroke="var(--ok2)" stroke-width="1.8" stroke-linecap="round"/></svg></div><div style="font-size:11px;font-weight:600;color:var(--ok2)">All clear</div></div>
     {% endfor %}
-    <div style="border-top:1px solid var(--bdr);margin-top:10px;padding-top:10px">
-      <div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px">Equipment Summary</div>
-      <div class="sr"><span class="srl">PV Equipment</span><span class="srv vok">{{ pveq.done }}/{{ pveq.total }}</span></div>
-      <div class="sr"><span class="srl">SS Equipment</span><span class="srv {% if sseq.active_count %}vc{% else %}vok{% endif %}">{{ sseq.done }}/{{ sseq.total }}</span></div>
-      <div class="sr"><span class="srl">MVPS / Inverter</span><span class="srv vi">{{ inv.done }}/{{ inv.total }}</span></div>
+    <div class="sr"><span class="srl" style="font-size:11px">SS Equipment</span><span class="srv {% if sseq.active_count %}vc{% else %}vok{% endif %}">{{ sseq.done }}/{{ sseq.total }}</span></div>
+    <div class="sr"><span class="srl" style="font-size:11px">PV Equipment</span><span class="srv vok">{{ pveq.done }}/{{ pveq.total }}</span></div>
+  </div>
+
+  <!-- MVPS & Fault Summary -->
+  <div class="card">
+    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--purple2)"></div>MVPS &amp; Faults</div><a href="{% url 'mvps' %}" style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--purple2);background:rgba(144,96,192,.1);border:1px solid rgba(144,96,192,.2);padding:3px 9px;border-radius:20px">View</a></div>
+    <div style="position:relative;height:110px;margin-bottom:10px"><canvas id="c-faults-mini"></canvas></div>
+    <div class="sr"><span class="srl" style="font-size:11px">MVPS / Inverter</span><span class="srv vp">{{ inv.done }}/{{ inv.total }}</span></div>
+    <div class="sr"><span class="srl" style="font-size:11px">Strings</span><span class="srv vt">{{ st.done }}/{{ st.total }}</span></div>
+    <div class="sr"><span class="srl" style="font-size:11px">SCB Cleared</span><span class="srv vok">{{ scb.done }}/{{ scb.total }}</span></div>
+    <div class="sr"><span class="srl" style="font-size:11px">Trackers Open</span><span class="srv {% if tr.pending %}vc{% else %}vok{% endif %}">{{ tr.pending }}</span></div>
+  </div>
+
+  <!-- Observations -->
+  <div class="card">
+    <div class="chdr"><div class="ctit"><div class="cdot" style="background:var(--purple2)"></div>Observations</div><a href="{% url 'observations' %}" style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--purple2);background:rgba(144,96,192,.1);border:1px solid rgba(144,96,192,.2);padding:3px 9px;border-radius:20px">View</a></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px">
+      <div style="background:rgba(184,48,48,.08);border:1px solid rgba(184,48,48,.15);border-radius:9px;padding:10px;text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--crit2)">{{ pvob.open }}</div><div style="font-size:9px;color:var(--t3);text-transform:uppercase;font-weight:600;margin-top:2px">PV Open</div></div>
+      <div style="background:rgba(26,158,92,.08);border:1px solid rgba(26,158,92,.15);border-radius:9px;padding:10px;text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--ok2)">{{ pvob.closed }}</div><div style="font-size:9px;color:var(--t3);text-transform:uppercase;font-weight:600;margin-top:2px">PV Closed</div></div>
+      <div style="background:rgba(200,120,32,.08);border:1px solid rgba(200,120,32,.15);border-radius:9px;padding:10px;text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--warn2)">{{ ssob.pending }}</div><div style="font-size:9px;color:var(--t3);text-transform:uppercase;font-weight:600;margin-top:2px">SS Pending</div></div>
+      <div style="background:rgba(26,158,92,.08);border:1px solid rgba(26,158,92,.15);border-radius:9px;padding:10px;text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--ok2)">{{ ssob.done }}</div><div style="font-size:9px;color:var(--t3);text-transform:uppercase;font-weight:600;margin-top:2px">SS Done</div></div>
     </div>
-    <a href="{% url 'equipment' %}" style="display:block;margin-top:10px;text-align:center;padding:7px;background:rgba(184,48,48,.06);border:1px solid rgba(184,48,48,.12);border-radius:8px;font-size:11px;color:var(--crit2);font-weight:600;font-family:'JetBrains Mono',monospace">Equipment Register &rarr;</a>
+    <div style="font-size:10px;color:var(--t3);font-family:'JetBrains Mono',monospace;text-align:center">{{ pvob.total }} PV total &middot; {{ ssob.total }} SS total &middot; 1st cycle</div>
   </div>
 </div>
 
 <style>
-.mod-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:14px;padding:18px 16px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s,background .2s;display:block;cursor:pointer}
-.mod-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)}
-.mod-card:hover{transform:translateY(-3px);border-color:rgba(200,152,14,.4);background:var(--bg3)}
-.vp{color:var(--purple2)}
+.qbtn{background:rgba(255,255,255,.06);border:1px solid var(--bdr2);border-radius:20px;padding:6px 14px;font-size:11px;color:var(--t2);font-family:'Sora',sans-serif;cursor:pointer;transition:all .2s;white-space:nowrap}
+.qbtn:hover{background:rgba(200,152,14,.12);border-color:rgba(200,152,14,.3);color:var(--gold2)}
+.vt{color:var(--teal2)}.vp{color:var(--purple2)}
+/* Markdown rendering styles */
+.md-body{font-size:13.5px;color:var(--t1);line-height:1.75}
+.md-h1{font-size:16px;font-weight:700;color:var(--t1);margin:14px 0 6px}
+.md-h2{font-size:14px;font-weight:700;color:var(--t1);margin:12px 0 5px;padding-bottom:4px;border-bottom:1px solid var(--bdr2)}
+.md-h3{font-size:13px;font-weight:700;color:var(--gold2);margin:10px 0 4px;letter-spacing:.2px}
+.md-bold{color:var(--t1);font-weight:700}
+.md-em{color:var(--t2);font-style:italic}
+.md-code{background:rgba(255,255,255,.08);padding:1px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold2)}
+.md-hr{border:none;border-top:1px solid var(--bdr2);margin:10px 0}
+.md-gap{height:7px}
+.md-li-num{display:flex;gap:8px;padding:2px 0;align-items:baseline}
+.md-li-bul{display:flex;gap:8px;padding:2px 0;align-items:baseline}
+.md-num{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--gold2);min-width:18px;flex-shrink:0}
+.md-bul{color:var(--gold2);font-size:10px;flex-shrink:0;margin-top:3px}
+.md-footer{font-size:9px;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-top:8px;letter-spacing:.3px}
+@media(max-width:600px){.md-body{font-size:13px}}
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.querySelectorAll('.mod-bar-fill').forEach(el => {
-  const v = parseFloat((el.dataset.pct||'0').replace('%',''));
-  if (!isNaN(v) && v > 0) setTimeout(()=>{ el.style.width=Math.min(v,100)+'%'; },400);
+// Animate card bar fills
+document.querySelectorAll('.mbar').forEach(el=>{
+  const v=parseFloat((el.dataset.pct||'0').replace('%',''));
+  if(!isNaN(v)&&v>0) setTimeout(()=>{el.style.width=Math.min(v,100)+'%';},400);
 });
 
-const box=document.getElementById('searchBox'),drop=document.getElementById('searchDrop');
-let timer;
-function doSearch(q){
-  clearTimeout(timer);
-  if(!q.trim()){drop.style.display='none';return;}
-  timer=setTimeout(()=>{
-    fetch('/api/search/?q='+encodeURIComponent(q)).then(r=>r.json()).then(d=>{
-      if(!d.results.length){drop.style.display='none';return;}
-      drop.innerHTML=d.results.map(r=>`<a href="${r.url}" style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--bdr);text-decoration:none" onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='transparent'"><span style="font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(30,111,170,.12);color:var(--info2);flex-shrink:0">${r.type}</span><div><div style="font-size:12px;font-weight:500;color:var(--t1)">${r.title}</div><div style="font-size:10px;color:var(--t3)">${r.sub}</div></div></a>`).join('');
-      drop.style.display='block';
-    });
-  },280);
-}
-document.addEventListener('click',e=>{if(!box.contains(e.target))drop.style.display='none';});
+// ── CHATBOT ──────────────────────────────────────────────────────────────────
+// Build plant data context from Django template
+const PLANT_DATA = `
+=== PLANT INFORMATION ===
+Name: Al Henakiya 1100 MW Solar Power Plant
+Operator: Power China HDEC
+Location: Al Henakiya, Saudi Arabia
+Report Date: March 2026
 
-const CL_CHART=['#2888cc','#19a08a','#e89030','#9060c0','#e5ad1a','#b84828','#4a7ab8','#22c068'];
-new Chart(document.getElementById('c-comp'),{type:'bar',data:{labels:['PM W1','PM W2','PM W3','CM W1','CM W2','CM W3'],datasets:[{data:[{{ w1pm.compliance|default:0 }},{{ w2pm.compliance|default:0 }},{{ w3pm.compliance|default:0 }},{{ w1cm.compliance|default:0 }},{{ w2cm.compliance|default:0 }},{{ w3cm.compliance|default:0 }}],backgroundColor:['rgba(34,192,104,.65)','rgba(34,192,104,.45)','rgba(34,192,104,.25)','rgba(232,144,48,.65)','rgba(232,144,48,.45)','rgba(232,144,48,.25)'],borderRadius:6,borderSkipped:false}]},options:{...CD,scales:{...CD.scales,y:{...CD.scales.y,max:100,ticks:{...CD.scales.y.ticks,callback:v=>v+'%'}}}}});
-const fD={{ pv_by_type_json|safe }},fL=Object.keys(fD),fV=Object.values(fD);
-new Chart(document.getElementById('c-faults'),{type:'doughnut',data:{labels:fL,datasets:[{data:fV,backgroundColor:CL_CHART,borderWidth:2,borderColor:'var(--bg2)',hoverOffset:5}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:false}}}});
-const fl=document.getElementById('faults-lgnd');
-fL.forEach((l,i)=>fl.innerHTML+=`<div class="li"><div class="ld" style="background:${CL_CHART[i%CL_CHART.length]}"></div>${l} ${fV[i]}</div>`);
-new Chart(document.getElementById('c-rates'),{type:'bar',data:{labels:['Trackers','Strings','MVPS','PV Equip'],datasets:[{data:[{{ tr.rate|default:0 }},{{ st.rate|default:0 }},{{ inv.rate|default:0 }},{{ pveq.rate|default:0 }}],backgroundColor:['rgba(40,136,204,.65)','rgba(25,160,138,.65)','rgba(144,96,192,.65)','rgba(232,144,48,.65)'],borderRadius:6,borderSkipped:false}]},options:{...CD,scales:{...CD.scales,y:{...CD.scales.y,max:100,ticks:{...CD.scales.y.ticks,callback:v=>v+'%'}}}}});
+=== PM (PREVENTIVE MAINTENANCE) COMPLIANCE ===
+Monthly Total: {{ pm_mo_pct }}% ({{ pm_mo_done }} done / {{ pm_mo_sched }} scheduled)
+Week 1: {{ w1pm.compliance }}% — {{ w1pm.done }} done / {{ w1pm.sched }} scheduled / {{ w1pm.pending }} pending
+Week 2: {{ w2pm.compliance }}% — {{ w2pm.done }} done / {{ w2pm.sched }} scheduled
+Week 3: {{ w3pm.compliance }}% — {{ w3pm.done }} done / {{ w3pm.sched }} scheduled
+Target: 90% | Status: {% if pm_mo_pct >= 90 %}ON TRACK{% else %}BELOW TARGET — needs attention{% endif %}
+
+=== CM (CORRECTIVE MAINTENANCE) COMPLIANCE ===
+Monthly Total: {{ cm_mo_pct }}% ({{ cm_mo_done }} done / {{ cm_mo_sched }} scheduled)
+Week 1: {{ w1cm.compliance }}% — {{ w1cm.done }} done / {{ w1cm.sched }} scheduled / {{ w1cm.pending }} pending
+Week 2: {{ w2cm.compliance }}% — {{ w2cm.done }} done / {{ w2cm.sched }} scheduled
+Target: 85% | Status: {% if cm_mo_pct >= 85 %}ON TRACK{% else %}BELOW TARGET — needs attention{% endif %}
+
+=== TRACKER FAULTS ===
+Total logged: {{ tr.total }} | Resolved: {{ tr.done }} | Pending: {{ tr.pending }} | Rate: {{ tr.rate }}%
+Alarm type breakdown: {{ tr.alarm_counts|safe_json }}
+Pending tracker details:
+{% for r in tr.pending_records %}- Block {{ r.block }}, Tracker {{ r.tracker }}: {{ r.alarm }} (logged {{ r.date }})
+{% endfor %}
+
+=== STRING FAULTS ===
+Total: {{ st.total }} | Rectified: {{ st.done }} | Pending: {{ st.pending }} | Rate: {{ st.rate }}%
+Action breakdown: {{ st.action_json|safe }}
+Pending string faults:
+{% for r in st_pending %}- Block {{ r.block }}, SCB {{ r.scb }}, String {{ r.string }}: {{ r.action }} ({{ r.date }})
+{% endfor %}
+
+=== SCB (STRING COMBINER BOX) STATUS ===
+Total: {{ scb.total }} | Done: {{ scb.done }} | Pending: {{ scb.pending }}
+Status: {% if scb.pending == 0 %}ALL CLEARED (100%){% else %}{{ scb.pending }} SCB faults pending{% endif %}
+
+=== MVPS / INVERTER FAULTS ===
+Total logged: {{ inv.total }} | Resolved: {{ inv.done }} | Pending: {{ inv.pending }} | Rate: {{ inv.rate }}%
+Pending inverter faults:
+{% for r in inv_pending %}- Block {{ r.block }}, {{ r.inverter }}: {{ r.issue }} ({{ r.date }})
+{% endfor %}
+
+=== PV EQUIPMENT FAILURES ===
+Total: {{ pveq.total }} | Resolved: {{ pveq.done }} | Active: {{ pveq.active }} | Rate: {{ pveq.rate }}%
+By type: {{ pveq.by_type|safe_json }}
+Active PV equipment issues:
+{% for r in pveq_active %}- Block {{ r.block }}: {{ r.equip }} — {{ r.issue }} ({{ r.date }})
+{% endfor %}
+
+=== SUBSTATION (SS) EQUIPMENT ISSUES ===
+Total: {{ sseq.total }} | Done: {{ sseq.done }} | Active: {{ sseq.active_count }}
+CRITICAL ACTIVE ISSUES:
+{% for r in sseq.active_records %}- {{ r.equip }} ({{ r.area }}): {{ r.issue }} | Status: {{ r.status }} | Date: {{ r.date }} | Action taken: {{ r.action|default:"None yet" }}
+{% endfor %}
+
+=== SS OBSERVATIONS ===
+Total: {{ ssob.total }} | Done: {{ ssob.done }} | Pending: {{ ssob.pending }}
+Pending SS observations:
+{% for r in ssob_pending %}- {{ r.equip }} ({{ r.area }}): {{ r.issue }}
+{% endfor %}
+
+=== PV FIELD OBSERVATIONS ===
+Total: {{ pvob.total }} | Open: {{ pvob.open }} | Closed: {{ pvob.closed }}
+Sample open observations:
+{% for r in pvob_sample %}- Block {{ r.block }}: {{ r.obs }} on {{ r.equip }} — {{ r.desc }} ({{ r.date }})
+{% endfor %}
+
+=== STAFF ROSTER ===
+Total: 14 | On Site: 11 | On Leave: 2 | Training: 1
+DAY SHIFT (7 active):
+- Ahmad Israr — Maintenance Engineer
+- Khalid Rahman — Sr. Technician
+- Faisal Al-Mutairi — Electrician
+- Omar Saleh — Mech. Technician
+- Yusuf Mohammed — Technician
+- Sami Al-Harbi — Technician
+- Waleed Nasser — Safety Officer
+NIGHT SHIFT (4 active):
+- Ibrahim Khalid — Technician
+- Tariq Fahad — Electrician
+- Hassan Al-Qahtani — Sr. Technician
+- Nasser Bin Said — Sr. Technician
+ON LEAVE: Majed Al-Dosari, Riyadh Turki
+IN TRAINING: Ziad Al-Anazi
+`;
+
+let chatHistory = [];
+let isTyping = false;
+
+function mdToHtml(raw) {
+  var t = raw
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.+)$/gm,'<div class="md-h3">$1</div>')
+    .replace(/^## (.+)$/gm,'<div class="md-h2">$1</div>')
+    .replace(/^# (.+)$/gm,'<div class="md-h1">$1</div>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong class="md-bold">$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em class="md-em">$1</em>')
+    .replace(/`([^`]+)`/g,'<code class="md-code">$1</code>')
+    .replace(/^---+$/gm,'<hr class="md-hr">')
+    .replace(/^(\d+)\. (.+)$/gm,'<div class="md-li-num"><span class="md-num">$1.</span><span>$2</span></div>')
+    .replace(/^[-*] (.+)$/gm,'<div class="md-li-bul"><span class="md-bul">&#9658;</span><span>$1</span></div>')
+    .replace(/\n\n+/g,'<div class="md-gap"></div>')
+    .replace(/\n/g,'<br>');
+  return t;
+}
+
+function addMsg(role, text) {
+  var msgs = document.getElementById('chatMessages');
+  var isAI = role === 'assistant';
+  var div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:10px;align-items:flex-start;' + (isAI ? '' : 'flex-direction:row-reverse');
+  var rendered = isAI ? mdToHtml(text) : text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  var avatarBg = isAI ? 'linear-gradient(135deg,#8a1010,#b01818)' : 'linear-gradient(135deg,#1a3a6a,#2a5a9a)';
+  var avatarColor = isAI ? '#e8d0c8' : '#c8d8f8';
+  var bubbleBg = isAI ? 'var(--bg3)' : 'rgba(30,111,170,.12)';
+  var bubbleBdr = isAI ? 'var(--bdr2)' : 'rgba(30,111,170,.22)';
+  var bubbleRadius = isAI ? '4px 14px 14px 14px' : '14px 4px 14px 14px';
+  var footer = isAI ? '<div class="md-footer">HDEC Bot</div>' : '';
+  div.innerHTML =
+    '<div style="width:30px;height:30px;border-radius:50%;background:' + avatarBg + ';display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:8px;font-weight:700;color:' + avatarColor + ';flex-shrink:0">' + (isAI ? 'AI' : 'ME') + '</div>' +
+    '<div style="background:' + bubbleBg + ';border:1px solid ' + bubbleBdr + ';border-radius:' + bubbleRadius + ';padding:13px 16px;max-width:84%;min-width:80px">' +
+    '<div class="md-body">' + rendered + '</div>' + footer + '</div>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addTyping() {
+  var msgs = document.getElementById('chatMessages');
+  var div = document.createElement('div');
+  div.id = 'typing-indicator';
+  div.style.cssText = 'display:flex;gap:10px;align-items:flex-start';
+  div.innerHTML =
+    '<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#8a1010,#b01818);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#e8d0c8;flex-shrink:0">AI</div>' +
+    '<div style="background:var(--bg4);border:1px solid var(--bdr2);border-radius:0 12px 12px 12px;padding:12px 16px">' +
+    '<div style="display:flex;gap:4px;align-items:center">' +
+    '<div style="width:7px;height:7px;border-radius:50%;background:var(--t3);animation:blink .8s infinite"></div>' +
+    '<div style="width:7px;height:7px;border-radius:50%;background:var(--t3);animation:blink .8s .2s infinite"></div>' +
+    '<div style="width:7px;height:7px;border-radius:50%;background:var(--t3);animation:blink .8s .4s infinite"></div>' +
+    '</div></div>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  var t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+async function sendChat() {
+  if (isTyping) return;
+  var input = document.getElementById('chatInput');
+  var q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  addMsg('user', q);
+  chatHistory.push({role:'user', content: q});
+  isTyping = true;
+  addTyping();
+  try {
+    var csrfToken = '';
+    document.cookie.split(';').forEach(function(c) {
+      var p = c.trim();
+      if (p.startsWith('csrftoken=')) csrfToken = p.split('=')[1];
+    });
+    var response = await fetch('/api/chat/', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+      body: JSON.stringify({messages: chatHistory, plant_context: PLANT_DATA})
+    });
+    var data;
+    try {
+      data = await response.json();
+    } catch(parseErr) {
+      removeTyping();
+      addMsg('assistant', 'Server returned an error (HTTP ' + response.status + '). Check that the server is running and the API key is set in Settings.');
+      isTyping = false;
+      return;
+    }
+    removeTyping();
+    var reply = (data && data.reply) ? data.reply : "No response received. Please try again.";
+    addMsg('assistant', reply);
+    if (data && data.ok !== false) chatHistory.push({role:'assistant', content: reply});
+  } catch(err) {
+    removeTyping();
+    addMsg('assistant', 'Request failed: ' + err.message + '. Make sure the server is running.');
+  }
+  isTyping = false;
+}
+
+function askQuick(q) {
+  document.getElementById('chatInput').value = q;
+  sendChat();
+}
+
+// ── CHARTS ───────────────────────────────────────────────────────────────────
+const pmL = {{ pm_labels_json|safe }};
+const pmS = {{ pm_sched_json|safe }};
+const pmD = {{ pm_done_json|safe }};
+const cmL = {{ cm_labels_json|safe }};
+const cmS = {{ cm_sched_json|safe }};
+const cmD = {{ cm_done_json|safe }};
+
+new Chart(document.getElementById('c-pm-monthly'),{type:'bar',data:{labels:pmL,datasets:[
+  {label:'Scheduled',data:pmS,backgroundColor:'rgba(34,192,104,.2)',borderRadius:5,borderSkipped:false},
+  {label:'Done',data:pmD,backgroundColor:'rgba(34,192,104,.75)',borderRadius:5,borderSkipped:false}
+]},options:{...CD,plugins:{legend:{display:true,labels:{color:'#7888a8',font:{size:10},boxWidth:10,padding:10}}}}});
+
+new Chart(document.getElementById('c-cm-monthly'),{type:'bar',data:{labels:cmL,datasets:[
+  {label:'Scheduled',data:cmS,backgroundColor:'rgba(232,144,48,.2)',borderRadius:5,borderSkipped:false},
+  {label:'Done',data:cmD,backgroundColor:'rgba(232,144,48,.75)',borderRadius:5,borderSkipped:false}
+]},options:{...CD,plugins:{legend:{display:true,labels:{color:'#7888a8',font:{size:10},boxWidth:10,padding:10}}}}});
+
+new Chart(document.getElementById('c-rates'),{type:'bar',data:{
+  labels:['PM\nMonthly','CM\nMonthly','Trackers','Strings','MVPS','PV Equip'],
+  datasets:[{data:[{{ pm_mo_pct }},{{ cm_mo_pct }},{{ tr.rate|default:0 }},{{ st.rate|default:0 }},{{ inv.rate|default:0 }},{{ pveq.rate|default:0 }}],
+    backgroundColor:['rgba(34,192,104,.7)','rgba(232,144,48,.7)','rgba(40,136,204,.7)','rgba(25,160,138,.7)','rgba(144,96,192,.7)','rgba(231,76,60,.6)'],
+    borderRadius:6,borderSkipped:false}]},
+  options:{...CD,scales:{...CD.scales,y:{...CD.scales.y,max:100,ticks:{...CD.scales.y.ticks,callback:v=>v+'%'}}}}
+});
+
+// Mini fault donut
+const pvD = {{ pv_by_type_json|safe }};
+new Chart(document.getElementById('c-faults-mini'),{type:'doughnut',data:{
+  labels:Object.keys(pvD),
+  datasets:[{data:Object.values(pvD),backgroundColor:['#2888cc','#19a08a','#e89030','#9060c0','#e5ad1a','#b84828'],borderWidth:2,borderColor:'var(--bg2)',hoverOffset:4}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:true,position:'right',labels:{color:'#7888a8',font:{size:9},boxWidth:7,padding:5}}}}
+});
 </script>
 {% endblock %}

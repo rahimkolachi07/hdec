@@ -26,6 +26,9 @@ TIME_ZONE = 'Asia/Riyadh'
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = '/static/'
+MEDIA_URL  = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+HDEC_DOCS_DIR = BASE_DIR / 'media' / 'documents'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ── Company Info ──────────────────────────────────────────────────────────────
@@ -51,3 +54,12 @@ LOGGING = {
     'handlers':{'console':{'class':'logging.StreamHandler','formatter':'simple'}},
     'loggers':{'maintenance':{'handlers':['console'],'level':'INFO','propagate':False}},
 }
+
+# OpenAI — set your key here or via environment variable
+import os
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+
+# Auth
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/login/'

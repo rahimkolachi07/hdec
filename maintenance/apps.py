@@ -1,4 +1,5 @@
 import os, sys, logging
+from pathlib import Path
 from django.apps import AppConfig
 logger = logging.getLogger(__name__)
 
@@ -57,3 +58,18 @@ class MaintenanceConfig(AppConfig):
             t = threading.Thread(target=_daily_loop, name="DailySyncWorker", daemon=True)
             t.start()
             logger.info("[Daily] Auto-sync started")
+
+        # Pre-load OpenAI API key from .env_hdec if present
+        env_path = Path(settings.BASE_DIR) / '.env_hdec'
+        if env_path.exists() and not getattr(settings, 'OPENAI_API_KEY', ''):
+            try:
+                for line in env_path.read_text().splitlines():
+                    if line.startswith('OPENAI_API_KEY='):
+                        key = line.split('=', 1)[1].strip()
+                        if key:
+                            os.environ['OPENAI_API_KEY'] = key
+                            settings.OPENAI_API_KEY = key
+                            logger.info("[HDEC Bot] OpenAI API key loaded from .env_hdec")
+                            break
+            except Exception as ke:
+                logger.warning(f"[HDEC Bot] Could not load API key: {ke}")
