@@ -104,61 +104,106 @@ def cosine_similarity(a: list, b: list) -> float:
 
 # ── Index a document ──────────────────────────────────────────────────────────
 def index_document(filepath: str, filename: str, api_key: str) -> dict:
-    """Extract text, chunk, embed, save to index. Returns stats."""
-    text = extract_text(filepath)
-    if not text:
-        return {"error": "Could not extract text from document"}
+    """
+    Extract text, chunk, optionally embed, save to index.
+    If OpenAI API is unreachable (e.g. PythonAnywhere free tier),
+    chunks are saved WITHOUT embeddings — keyword search still works.
+    """
+    # Step 1: Extract text
+    try:
+        text = extract_text(filepath)
+    except Exception as e:
+        return {"error": "Text extraction error: " + str(e)}
 
+    if not text or not text.strip():
+        return {"error": "Could not extract text — file may be empty, password-protected, or a scanned image"}
+
+    # Step 2: Chunk
     chunks = chunk_text(text)
     if not chunks:
-        return {"error": "Document appears to be empty"}
+        return {"error": "Document appears to be empty after chunking"}
 
     doc_id = hashlib.md5(filename.encode()).hexdigest()[:12]
     idx = _load_index()
-
-    # Remove old chunks for this doc
     idx["chunks"] = [c for c in idx["chunks"] if c.get("doc_id") != doc_id]
 
-    # Embed each chunk (batch to save cost)
+    # Step 3: Embed (optional — graceful fallback if OpenAI unreachable)
     embedded_chunks = []
-    try:
-        from openai import OpenAI
-        client = OpenAI(api_key=api_key)
-        # Batch in groups of 20
-        for batch_start in range(0, len(chunks), 20):
-            batch = chunks[batch_start:batch_start+20]
-            resp = client.embeddings.create(
-                model="text-embedding-3-small",
-                input=[c[:8000] for c in batch]
-            )
-            for j, emb_data in enumerate(resp.data):
-                embedded_chunks.append({
-                    "doc_id":   doc_id,
-                    "filename": filename,
-                    "chunk_idx":batch_start + j,
-                    "text":     batch[j],
-                    "embedding":emb_data.embedding,
-                })
-    except Exception as e:
-        return {"error": f"Embedding failed: {e}"}
+    embed_error = ""
+    embed_ok = False
 
-    # Save to index
+    if api_key:
+        try:
+            import urllib.request, urllib.error
+            # Test connectivity first with a tiny request
+            test_req = urllib.request.Request(
+                "https://api.openai.com/v1/models",
+                headers={"Authorization": "Bearer " + api_key},
+                method="GET"
+            )
+            urllib.request.urlopen(test_req, timeout=8)
+
+            # Connectivity OK — embed using urllib (no openai package needed)
+            for batch_start in range(0, len(chunks), 20):
+                batch = chunks[batch_start:batch_start+20]
+                payload = json.dumps({
+                    "model": "text-embedding-3-small",
+                    "input": [c[:8000] for c in batch]
+                }).encode("utf-8")
+                req = urllib.request.Request(
+                    "https://api.openai.com/v1/embeddings",
+                    data=payload,
+                    headers={"Authorization": "Bearer " + api_key, "Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    result = json.loads(resp.read().decode("utf-8"))
+                for j, emb_data in enumerate(result["data"]):
+                    embedded_chunks.append({
+                        "doc_id":    doc_id,
+                        "filename":  filename,
+                        "chunk_idx": batch_start + j,
+                        "text":      batch[j],
+                        "embedding": emb_data["embedding"],
+                    })
+            embed_ok = True
+        except Exception as e:
+            embed_error = str(e)
+            logger.warning(f"[RAG] Embedding skipped (no internet or API error): {e}")
+
+    # If embedding failed or skipped — store chunks without embeddings
+    # (keyword search will still work in rag_chat)
+    if not embed_ok:
+        for i, chunk in enumerate(chunks):
+            embedded_chunks.append({
+                "doc_id":    doc_id,
+                "filename":  filename,
+                "chunk_idx": i,
+                "text":      chunk,
+                "embedding": [],   # empty = keyword-only search
+            })
+
+    # Step 4: Save
     idx["documents"][doc_id] = {
-        "filename":  filename,
-        "filepath":  filepath,
-        "indexed_at":datetime.now().strftime("%d %b %Y %H:%M"),
-        "chunks":    len(embedded_chunks),
-        "chars":     len(text),
-        "doc_id":    doc_id,
+        "filename":   filename,
+        "filepath":   filepath,
+        "indexed_at": datetime.now().strftime("%d %b %Y %H:%M"),
+        "chunks":     len(embedded_chunks),
+        "chars":      len(text),
+        "doc_id":     doc_id,
+        "embedded":   embed_ok,
     }
     idx["chunks"].extend(embedded_chunks)
     _save_index(idx)
 
+    status_msg = "embedded" if embed_ok else ("stored (no embeddings: " + embed_error[:80] + ")" if embed_error else "stored without embeddings")
     return {
         "doc_id":  doc_id,
         "chunks":  len(embedded_chunks),
         "chars":   len(text),
         "success": True,
+        "embedded": embed_ok,
+        "status": status_msg,
     }
 
 # ── Remove a document ─────────────────────────────────────────────────────────
@@ -177,22 +222,54 @@ def remove_document(doc_id: str):
 
 # ── Search ────────────────────────────────────────────────────────────────────
 def search_chunks(query: str, api_key: str, top_k: int = 5) -> list:
-    """Embed query and return top-k most similar chunks."""
+    """
+    Search chunks by embedding similarity (if available) or keyword fallback.
+    Works on PythonAnywhere free tier via keyword matching.
+    """
     idx = _load_index()
     if not idx["chunks"]:
         return []
-    try:
-        q_emb = get_embedding(query, api_key)
-    except Exception as e:
-        logger.error(f"search embedding error: {e}")
-        return []
+
+    # Check if any chunks have embeddings
+    has_embeddings = any(c.get("embedding") for c in idx["chunks"])
+
+    if has_embeddings and api_key:
+        # Try vector search first
+        try:
+            import urllib.request
+            payload = json.dumps({
+                "model": "text-embedding-3-small",
+                "input": query[:8000]
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                "https://api.openai.com/v1/embeddings",
+                data=payload,
+                headers={"Authorization": "Bearer " + api_key, "Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+            q_emb = result["data"][0]["embedding"]
+            scored = []
+            for chunk in idx["chunks"]:
+                emb = chunk.get("embedding")
+                if emb:
+                    score = cosine_similarity(q_emb, emb)
+                    scored.append((score, chunk))
+            scored.sort(key=lambda x: x[0], reverse=True)
+            return [c for _, c in scored[:top_k]]
+        except Exception as e:
+            logger.warning(f"[RAG] Vector search failed, using keyword: {e}")
+
+    # Keyword fallback — score by word overlap
+    q_words = set(query.lower().split())
     scored = []
     for chunk in idx["chunks"]:
-        emb = chunk.get("embedding")
-        if not emb:
-            continue
-        score = cosine_similarity(q_emb, emb)
-        scored.append((score, chunk))
+        text = chunk.get("text", "").lower()
+        # Count how many query words appear in chunk
+        score = sum(1 for w in q_words if len(w) > 2 and w in text)
+        if score > 0:
+            scored.append((score, chunk))
     scored.sort(key=lambda x: x[0], reverse=True)
     return [c for _, c in scored[:top_k]]
 

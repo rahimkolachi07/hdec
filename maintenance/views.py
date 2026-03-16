@@ -402,8 +402,14 @@ def doc_upload(request):
         result = index_document(str(dest), safe_name, api_key)
         if result.get('error'):
             return JsonResponse({'ok': False, 'msg': result['error']}, status=400)
-        return JsonResponse({'ok': True, 'filename': safe_name, 'chunks': result.get('chunks', 0),
-                             'msg': 'Indexed ' + str(result.get('chunks', 0)) + ' chunks from ' + safe_name})
+        embedded = result.get('embedded', False)
+        chunks   = result.get('chunks', 0)
+        if embedded:
+            msg = 'Indexed ' + str(chunks) + ' chunks with embeddings from ' + safe_name
+        else:
+            msg = 'Saved ' + str(chunks) + ' chunks from ' + safe_name + ' (keyword search — no vector embeddings on free hosting)'
+        return JsonResponse({'ok': True, 'filename': safe_name, 'chunks': chunks,
+                             'embedded': embedded, 'msg': msg})
     except Exception as e:
         return JsonResponse({'ok': False, 'msg': str(e)}, status=500)
 
