@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Admin Panel — HDEC</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#030711;--s:rgba(255,255,255,.03);--s2:rgba(255,255,255,.06);--border:rgba(255,255,255,.07);--accent:#3b9eff;--a2:#00e5c8;--text:#e2e8f5;--tm:rgba(226,232,245,.45);--td:rgba(226,232,245,.2);--red:#ef4444;--green:#22c55e;--fd:'Syne',sans-serif;--fb:'DM Sans',sans-serif}
+    body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100vh}
+    canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.3}
+    .wrap{position:relative;z-index:1}
+
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 40px;border-bottom:1px solid var(--border);background:rgba(3,7,17,.85);backdrop-filter:blur(20px);position:sticky;top:0;z-index:100}
+    .tl{display:flex;align-items:center;gap:12px}
+    .back{padding:7px 14px;border-radius:30px;border:1px solid var(--border);background:var(--s);color:var(--tm);font-size:12.5px;text-decoration:none;transition:all .2s}
+    .back:hover{color:var(--text);border-color:rgba(59,158,255,.3)}
+    .page-title{font-family:var(--fd);font-size:17px;font-weight:700}
+    .page-title span{color:var(--accent)}
+    .user-badge{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:30px;border:1px solid rgba(162,89,255,.25);background:rgba(162,89,255,.08);color:#c084fc;font-size:12.5px;font-weight:600}
+
+    .main{padding:32px 40px 60px;max-width:1100px;margin:0 auto}
+
+    /* TOAST */
+    .toast{position:fixed;top:80px;right:24px;z-index:9999;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;border:1px solid;animation:slideIn .3s ease;display:none}
+    .toast.success{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.25);color:#4ade80}
+    .toast.error{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.25);color:#f87171}
+    @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+    /* GRID */
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px}
+    @media(max-width:800px){.grid{grid-template-columns:1fr}}
+
+    /* CARD */
+    .card{background:var(--s);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+    .card-head{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+    .card-head h3{font-family:var(--fd);font-size:15px;font-weight:700}
+    .card-head .ico{font-size:18px}
+    .card-body{padding:22px 24px}
+
+    /* FORM */
+    .field{margin-bottom:14px}
+    .field label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--tm);margin-bottom:6px}
+    .field input,.field select{width:100%;padding:10px 13px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13.5px;font-family:var(--fb);outline:none;transition:all .2s}
+    .field input:focus,.field select:focus{border-color:rgba(59,158,255,.35);background:rgba(59,158,255,.04)}
+    .field input::placeholder{color:var(--td)}
+    .field select option{background:#0f1827}
+    .btn{padding:10px 20px;border-radius:10px;border:none;font-size:13px;font-weight:600;font-family:var(--fb);cursor:pointer;transition:all .2s}
+    .btn-primary{background:linear-gradient(135deg,var(--accent),#1a52cc);color:#fff}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(59,158,255,.3)}
+    .btn-danger{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+    .btn-danger:hover{background:rgba(239,68,68,.2)}
+    .btn-sm{padding:5px 12px;font-size:11.5px;border-radius:8px}
+
+    /* USERS TABLE */
+    .users-table{width:100%;border-collapse:collapse}
+    .users-table thead th{padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--tm);font-weight:600;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+    .users-table tbody tr{border-bottom:1px solid rgba(255,255,255,.03);transition:background .15s}
+    .users-table tbody tr:hover{background:rgba(59,158,255,.03)}
+    .users-table td{padding:11px 14px;font-size:13px;vertical-align:middle}
+    .role-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+    .role-admin{background:rgba(162,89,255,.12);color:#c084fc;border:1px solid rgba(162,89,255,.2)}
+    .role-viewer{background:rgba(59,158,255,.1);color:#60b0ff;border:1px solid rgba(59,158,255,.18)}
+    .td-actions{display:flex;align-items:center;gap:6px}
+
+    /* CHANGE PW MODAL */
+    .modal-bg{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;display:none}
+    .modal-bg.open{display:flex}
+    .modal{background:#0a1020;border:1px solid var(--border);border-radius:18px;padding:32px;width:360px;animation:up .25s ease}
+    @keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .modal h3{font-family:var(--fd);font-size:16px;font-weight:700;margin-bottom:20px}
+    .modal .close{position:absolute;right:16px;top:16px;cursor:pointer;color:var(--tm);font-size:18px}
+    .modal-inner{position:relative}
+  </style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div class="wrap">
+  <header class="topbar">
+    <div class="tl">
+      <a href="/" class="back">← Dashboard</a>
+      <div class="page-title">🔐 <span>Admin Panel</span> · HDEC</div>
+    </div>
+    <div class="user-badge">👑 {{ current_user.name }}</div>
+  </header>
+
+  <main class="main">
+    <div class="toast" id="toast"></div>
+
+    <div class="grid">
+      <!-- CREATE USER -->
+      <div class="card">
+        <div class="card-head"><span class="ico">➕</span><h3>Create New User</h3></div>
+        <div class="card-body">
+          <div class="field"><label>Full Name</label><input type="text" id="newName" placeholder="e.g. Ahmed Hassan"></div>
+          <div class="field"><label>Username</label><input type="text" id="newUsername" placeholder="e.g. ahmed.hassan"></div>
+          <div class="field"><label>Password</label><input type="password" id="newPassword" placeholder="Min 4 characters"></div>
+          <div class="field">
+            <label>Role</label>
+            <select id="newRole">
+              <option value="viewer">Viewer — can view only</option>
+              <option value="admin">Admin — can edit + manage users</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="createUser()">Create User</button>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="card">
+        <div class="card-head"><span class="ico">📊</span><h3>User Statistics</h3></div>
+        <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding-top:28px">
+          <div style="text-align:center;padding:20px;border-radius:14px;border:1px solid var(--border);background:rgba(162,89,255,.05)">
+            <div style="font-family:var(--fd);font-size:40px;font-weight:800;color:#c084fc" id="adminCount">—</div>
+            <div style="font-size:11px;color:var(--td);text-transform:uppercase;letter-spacing:.7px;margin-top:6px">Admins</div>
+          </div>
+          <div style="text-align:center;padding:20px;border-radius:14px;border:1px solid var(--border);background:rgba(59,158,255,.05)">
+            <div style="font-family:var(--fd);font-size:40px;font-weight:800;color:#60b0ff" id="viewerCount">—</div>
+            <div style="font-size:11px;color:var(--td);text-transform:uppercase;letter-spacing:.7px;margin-top:6px">Viewers</div>
+          </div>
+          <div style="grid-column:1/-1;text-align:center;padding:16px;border-radius:14px;border:1px solid var(--border);background:rgba(0,229,200,.04)">
+            <div style="font-family:var(--fd);font-size:36px;font-weight:800;color:#2dd4bf" id="totalCount">—</div>
+            <div style="font-size:11px;color:var(--td);text-transform:uppercase;letter-spacing:.7px;margin-top:4px">Total Users</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALL USERS TABLE -->
+    <div class="card">
+      <div class="card-head"><span class="ico">👥</span><h3>All Users</h3></div>
+      <div style="overflow-x:auto">
+        <table class="users-table">
+          <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Actions</th></tr></thead>
+          <tbody id="usersTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div class="modal-bg" id="pwModal">
+  <div class="modal modal-inner">
+    <span class="close" onclick="closePwModal()">✕</span>
+    <h3>Change Password</h3>
+    <input type="hidden" id="pwUsername">
+    <div class="field"><label>Username</label><input type="text" id="pwUsernameDisplay" disabled></div>
+    <div class="field"><label>New Password</label><input type="password" id="newPw" placeholder="Min 4 characters"></div>
+    <button class="btn btn-primary" onclick="submitPw()" style="width:100%;margin-top:4px">Update Password</button>
+  </div>
+</div>
+
+<script>
+const canvas=document.getElementById('cv'),ctx=canvas.getContext('2d');let W,H;
+const dots=Array.from({length:40},()=>({x:Math.random()*2000,y:Math.random()*1200,dx:(Math.random()-.5)*.25,dy:(Math.random()-.5)*.25,r:Math.random()*1.2+.3,a:Math.random()*.35+.07}));
+function rs(){W=canvas.width=innerWidth;H=canvas.height=innerHeight}rs();addEventListener('resize',rs);
+function drawBg(){ctx.clearRect(0,0,W,H);ctx.strokeStyle='rgba(59,158,255,0.02)';ctx.lineWidth=1;for(let x=0;x<W;x+=90){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=0;y<H;y+=90){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}dots.forEach(d=>{d.x+=d.dx;d.y+=d.dy;if(d.x<0)d.x=W;if(d.x>W)d.x=0;if(d.y<0)d.y=H;if(d.y>H)d.y=0;ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,Math.PI*2);ctx.fillStyle=`rgba(59,158,255,${d.a})`;ctx.fill()});requestAnimationFrame(drawBg)}
+drawBg();
+
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+let allUsers = [];
+
+function showToast(msg, type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`toast ${type}`; t.style.display='block';
+  setTimeout(()=>{t.style.display='none'},3000);
+}
+
+async function api(body){
+  const r=await fetch('/api/admin/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify(body)});
+  return r.json();
+}
+
+async function loadUsers(){
+  // Fetch users list by re-reading the page data injected below
+  renderUsers(USERS_DATA);
+}
+
+function renderUsers(users){
+  allUsers = users;
+  const admins=users.filter(u=>u.role==='admin').length;
+  const viewers=users.filter(u=>u.role==='viewer').length;
+  document.getElementById('adminCount').textContent=admins;
+  document.getElementById('viewerCount').textContent=viewers;
+  document.getElementById('totalCount').textContent=users.length;
+
+  const tbody=document.getElementById('usersTableBody');
+  tbody.innerHTML=users.map(u=>`
+    <tr>
+      <td><strong>${u.name}</strong></td>
+      <td style="color:var(--tm);font-family:monospace;font-size:12.5px">${u.username}</td>
+      <td><span class="role-badge role-${u.role}">${u.role==='admin'?'👑 Admin':'👁 Viewer'}</span></td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-sm" style="background:rgba(59,158,255,.1);color:#60b0ff;border:1px solid rgba(59,158,255,.2)" onclick="openPwModal('${u.username}','${u.name}')">🔑 Password</button>
+          ${u.username!=='admin'?`<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.username}','${u.name}')">🗑 Delete</button>`:'<span style="font-size:11px;color:var(--td)">Protected</span>'}
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+async function createUser(){
+  const name=document.getElementById('newName').value.trim();
+  const username=document.getElementById('newUsername').value.trim();
+  const password=document.getElementById('newPassword').value;
+  const role=document.getElementById('newRole').value;
+  if(!name||!username||!password){showToast('All fields are required','error');return}
+  const r=await api({action:'create',name,username,password,role});
+  if(r.ok){
+    showToast(`✓ User "${username}" created`);
+    // Add to local list and re-render
+    allUsers.push({name,username,role});
+    renderUsers(allUsers);
+    document.getElementById('newName').value='';
+    document.getElementById('newUsername').value='';
+    document.getElementById('newPassword').value='';
+  } else {
+    showToast(r.msg,'error');
+  }
+}
+
+async function deleteUser(username, name){
+  if(!confirm(`Delete user "${name}" (${username})?`))return;
+  const r=await api({action:'delete',username});
+  if(r.ok){
+    showToast(`✓ Deleted "${username}"`);
+    allUsers=allUsers.filter(u=>u.username!==username);
+    renderUsers(allUsers);
+  } else {
+    showToast(r.msg,'error');
+  }
+}
+
+function openPwModal(username, name){
+  document.getElementById('pwUsername').value=username;
+  document.getElementById('pwUsernameDisplay').value=`${name} (${username})`;
+  document.getElementById('newPw').value='';
+  document.getElementById('pwModal').classList.add('open');
+}
+function closePwModal(){ document.getElementById('pwModal').classList.remove('open') }
+
+async function submitPw(){
+  const username=document.getElementById('pwUsername').value;
+  const password=document.getElementById('newPw').value;
+  if(!password||password.length<4){showToast('Password must be at least 4 characters','error');return}
+  const r=await api({action:'change_password',username,password});
+  if(r.ok){showToast('✓ Password updated');closePwModal();}
+  else showToast(r.msg,'error');
+}
+
+document.getElementById('pwModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closePwModal()});
+
+// Inject server-side users
+const USERS_DATA = {{ users_json|safe }};
+loadUsers();
+</script>
+</body>
+</html>
