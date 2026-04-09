@@ -5,7 +5,10 @@ from functools import wraps
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .auth_utils import authenticate, get_all_users, create_user, delete_user, change_password
+from .auth_utils import (
+    authenticate, get_all_users, create_user, delete_user, change_password,
+    update_user_permissions, MODULES, DEFAULT_PERMISSIONS,
+)
 
 # ── HELPERS ────────────────────────────────────────────────────────────────
 
@@ -67,6 +70,8 @@ def admin_panel(request):
     return render(request, 'core/admin.html', {
         **_ctx(request),
         'users_json': json.dumps(users),
+        'modules_json': json.dumps(MODULES),
+        'defaults_json': json.dumps(DEFAULT_PERMISSIONS),
     })
 
 
@@ -81,7 +86,8 @@ def admin_api(request):
         if action == 'create':
             ok, msg = create_user(
                 data.get('username', ''), data.get('password', ''),
-                data.get('name', ''), data.get('role', 'viewer')
+                data.get('name', ''), data.get('role', 'viewer'),
+                data.get('email', ''), data.get('permissions')
             )
             return JsonResponse({'ok': ok, 'msg': msg})
         elif action == 'delete':
@@ -90,6 +96,12 @@ def admin_api(request):
         elif action == 'change_password':
             ok, msg = change_password(data.get('username', ''), data.get('password', ''))
             return JsonResponse({'ok': ok, 'msg': msg})
+        elif action == 'update_permissions':
+            ok, msg = update_user_permissions(data.get('username', ''), data.get('permissions', {}))
+            return JsonResponse({'ok': ok, 'msg': msg})
+        elif action == 'get_defaults':
+            role = data.get('role', 'viewer')
+            return JsonResponse({'ok': True, 'permissions': DEFAULT_PERMISSIONS.get(role, {})})
     return JsonResponse({'error': 'Bad request'}, status=400)
 
 # ── SHEET CONFIG ───────────────────────────────────────────────────────────
@@ -716,19 +728,32 @@ def manpower_import(request):
         ws2 = wb[tech_sheet_name]
         rows2 = list(ws2.iter_rows(values_only=True))
         if len(rows2) > 1:
+            # Read ALL columns (no hardcoded cap) — skip non-name header values
+            SKIP_WORDS = {'available', 'night', 'day', 'off', 'shift', 'name', 'date', 'total', ''}
             tech_names = []
-            for n in rows2[1][1:20]:
-                if n and isinstance(n, str) and 'available' not in n.lower() and 'night' not in n.lower() and 'day' not in n.lower():
-                    tech_names.append(n)
+            header_row = rows2[1] if len(rows2) > 1 else []
+            for n in header_row[1:]:  # skip first column (date/label column)
+                if n and isinstance(n, str) and n.strip().lower() not in SKIP_WORDS:
+                    tech_names.append(n.strip())
             tech_schedule = {n: {} for n in tech_names}
             for row in rows2[2:]:
-                if not row[0] or not hasattr(row[0], 'strftime'):
+                if not row[0]:
                     continue
-                d = row[0].strftime('%Y-%m-%d')
+                # Accept both datetime objects and date strings
+                if hasattr(row[0], 'strftime'):
+                    d = row[0].strftime('%Y-%m-%d')
+                elif isinstance(row[0], str) and row[0].strip():
+                    d = row[0].strip()[:10]
+                else:
+                    continue
                 for i, name in enumerate(tech_names):
-                    val = row[1+i] if (1+i) < len(row) else None
-                    if val and isinstance(val, str) and not val.startswith('=') and val.strip():
-                        tech_schedule[name][d] = val.strip()
+                    col_idx = 1 + i
+                    val = row[col_idx] if col_idx < len(row) else None
+                    if val is None:
+                        continue
+                    val_str = str(val).strip()
+                    if val_str and not val_str.startswith('='):
+                        tech_schedule[name][d] = val_str
             technicians = [{'name': n, 'role': 'Technician', 'schedule': tech_schedule[n]} for n in tech_names]
 
     if not engineers and not technicians:
@@ -1040,6 +1065,12 @@ def attendance_mark(request):
     time_str  = data.get('time', _dt.now().strftime('%H:%M:%S'))
     date_str  = data.get('date', _dt.now().strftime('%Y-%m-%d'))
 
+    # Location fields (sent from browser Geolocation API)
+    lat           = data.get('lat')         # float or None
+    lng           = data.get('lng')         # float or None
+    location_name = data.get('location_name', '')   # reverse-geocoded name (if browser got it)
+    location_accuracy = data.get('accuracy')        # metres
+
     if not name:
         return JsonResponse({'error': 'name required'}, status=400)
 
@@ -1051,11 +1082,26 @@ def attendance_mark(request):
         records[date_str][name] = {'time_in': None, 'time_out': None, 'status': 'Absent'}
 
     rec = records[date_str][name]
+
+    # Build location snapshot for this action
+    loc_snapshot = {}
+    if lat is not None and lng is not None:
+        loc_snapshot = {
+            'lat': round(float(lat), 6),
+            'lng': round(float(lng), 6),
+            'accuracy': round(float(location_accuracy), 1) if location_accuracy else None,
+            'name': location_name or f"{round(float(lat),5)}, {round(float(lng),5)}",
+        }
+
     if action == 'in':
-        rec['time_in'] = time_str
-        rec['status']  = 'Present'
+        rec['time_in']       = time_str
+        rec['status']        = 'Present'
+        if loc_snapshot:
+            rec['location_in'] = loc_snapshot
     elif action == 'out':
         rec['time_out'] = time_str
+        if loc_snapshot:
+            rec['location_out'] = loc_snapshot
         if rec.get('time_in'):
             # Calculate hours
             try:
@@ -1136,13 +1182,17 @@ def attendance_export(request):
         ws.title = f'Attendance {date}'
         day_recs = records.get(date, {})
 
-        hdr(ws['A1'], 'S.No',      6)
-        hdr(ws['B1'], 'Name',      22)
-        hdr(ws['C1'], 'Date',      14)
-        hdr(ws['D1'], 'Status',    12)
-        hdr(ws['E1'], 'Time In',   12)
-        hdr(ws['F1'], 'Time Out',  12)
-        hdr(ws['G1'], 'Hours',     10)
+        hdr(ws['A1'], 'S.No',          6)
+        hdr(ws['B1'], 'Name',          22)
+        hdr(ws['C1'], 'Date',          14)
+        hdr(ws['D1'], 'Status',        12)
+        hdr(ws['E1'], 'Time In',       12)
+        hdr(ws['F1'], 'Time Out',      12)
+        hdr(ws['G1'], 'Hours',         10)
+        hdr(ws['H1'], 'Location In',   30)
+        hdr(ws['I1'], 'Coords In',     22)
+        hdr(ws['J1'], 'Location Out',  30)
+        hdr(ws['K1'], 'Coords Out',    22)
 
         # Get all technician names
         # Use people roster (attendance_people.json) — falls back to schedule
@@ -1153,12 +1203,19 @@ def attendance_export(request):
 
         for i, name in enumerate(tech_names, 1):
             rec = day_recs.get(name, {})
-            status  = rec.get('status', 'Absent')
-            time_in = rec.get('time_in', '—')
-            time_out= rec.get('time_out', '—')
-            hours   = rec.get('hours', '—')
-            fill    = PRES_FILL if status == 'Present' else ABS_FILL
-            row_data = [i, name, date, status, time_in, time_out, hours]
+            status   = rec.get('status', 'Absent')
+            time_in  = rec.get('time_in', '—')
+            time_out = rec.get('time_out', '—')
+            hours    = rec.get('hours', '—')
+            loc_in   = rec.get('location_in', {})
+            loc_out  = rec.get('location_out', {})
+            loc_in_name  = loc_in.get('name', '') if loc_in else ''
+            loc_in_coord = f"{loc_in['lat']}, {loc_in['lng']}" if loc_in else ''
+            loc_out_name = loc_out.get('name', '') if loc_out else ''
+            loc_out_coord= f"{loc_out['lat']}, {loc_out['lng']}" if loc_out else ''
+            fill = PRES_FILL if status == 'Present' else ABS_FILL
+            row_data = [i, name, date, status, time_in, time_out, hours,
+                        loc_in_name, loc_in_coord, loc_out_name, loc_out_coord]
             for ci, val in enumerate(row_data, 1):
                 cell = ws.cell(i+1, ci, val)
                 cell.fill = fill; cell.border = bdr

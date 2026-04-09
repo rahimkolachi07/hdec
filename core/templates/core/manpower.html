@@ -1440,7 +1440,14 @@ async function loadTodayAttendance(){
     const avatar = photo
       ? `<img src="${photo}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid ${isP?'rgba(34,197,94,.5)':'rgba(239,68,68,.3)'};flex-shrink:0">`
       : `<span style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${isP?'#22c55e,#16a34a':'#374151,#1f2937'});display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:#fff;font-weight:700;font-family:var(--fd)">${p.name.charAt(0).toUpperCase()}</span>`;
-    return '<div class="att-row" style="gap:10px">'+
+    // Build location tooltip string
+    const locIn  = rec.location_in;
+    const locOut = rec.location_out;
+    const locTag = locIn
+      ? `<span title="In: ${locIn.name||''}\nLat: ${locIn.lat}, Lng: ${locIn.lng}\nAccuracy: ${locIn.accuracy||'?'}m"
+             style="font-size:10px;color:#fbbf24;cursor:default">📍${locIn.name?locIn.name.split(',')[0]:locIn.lat.toFixed(3)+','+locIn.lng.toFixed(3)}</span>`
+      : '';
+    return '<div class="att-row" style="gap:10px;flex-wrap:wrap">'+
       avatar+
       '<span class="att-name">'+p.name+'</span>'+
       '<span style="font-size:10.5px;color:rgba(226,232,245,.3)">'+( p.role||'')+'</span>'+
@@ -1448,6 +1455,7 @@ async function loadTodayAttendance(){
       '<span class="att-time" style="color:#60b0ff">'+(rec.time_in?'In '+rec.time_in.slice(0,5):'')+'</span>'+
       '<span class="att-time" style="color:#c084fc">'+(rec.time_out?'Out '+rec.time_out.slice(0,5):'')+'</span>'+
       '<span class="att-time" style="color:#4ade80">'+(rec.hours?rec.hours+'h':'')+'</span>'+
+      locTag+
     '</div>';
   }).join('');
   document.getElementById('att-present').textContent = present;
@@ -1587,6 +1595,19 @@ async function loadRecords(mode){
       const avatar = photo
         ? `<img src="${photo}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid ${present?'rgba(34,197,94,.4)':'rgba(255,255,255,.1)'}">`
         : `<span style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3b9eff,#a259ff);display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;vertical-align:middle">${p.name.charAt(0).toUpperCase()}</span>`;
+      // Location cells
+      function locCell(locObj) {
+        if(!locObj) return '<td style="padding:9px 12px;font-size:11.5px;color:rgba(226,232,245,.25)">—</td>';
+        const coordStr = locObj.lat.toFixed(4)+', '+locObj.lng.toFixed(4);
+        const displayName = locObj.name || coordStr;
+        const mapsUrl = `https://www.google.com/maps?q=${locObj.lat},${locObj.lng}`;
+        return `<td style="padding:9px 12px;font-size:11.5px;max-width:180px">
+          <a href="${mapsUrl}" target="_blank" style="color:#fbbf24;text-decoration:none;display:flex;align-items:flex-start;gap:4px" title="Lat: ${locObj.lat}\nLng: ${locObj.lng}\nAccuracy: ${locObj.accuracy||'?'}m">
+            <span>📍</span><span style="word-break:break-word;line-height:1.3">${displayName}</span>
+          </a>
+          <div style="font-size:10px;color:rgba(226,232,245,.3);margin-top:2px">${coordStr}${locObj.accuracy?' · ±'+locObj.accuracy+'m':''}</div>
+        </td>`;
+      }
       return '<tr style="border-bottom:1px solid rgba(255,255,255,.03)">'+
         '<td style="padding:9px 12px;font-size:12px;color:rgba(226,232,245,.3)">'+(i+1)+'</td>'+
         '<td style="padding:9px 12px"><div style="display:flex;align-items:center;gap:8px">'+avatar+'<div><div style="font-size:13px;font-weight:500">'+p.name+'</div><div style="font-size:10.5px;color:rgba(226,232,245,.3)">'+( p.role||'')+'</div></div></div></td>'+
@@ -1594,12 +1615,14 @@ async function loadRecords(mode){
         '<td style="padding:9px 12px;font-family:monospace;font-size:12.5px;color:#60b0ff">'+(rec&&rec.time_in||'—')+'</td>'+
         '<td style="padding:9px 12px;font-family:monospace;font-size:12.5px;color:#c084fc">'+(rec&&rec.time_out||'—')+'</td>'+
         '<td style="padding:9px 12px;font-size:12.5px;color:#4ade80">'+(rec&&rec.hours?rec.hours+'h':'—')+'</td>'+
+        locCell(rec&&rec.location_in)+
+        locCell(rec&&rec.location_out)+
       '</tr>';
     }).join('');
     container.innerHTML='<div style="font-size:12px;color:rgba(226,232,245,.35);margin-bottom:10px">📅 '+date+' — '+people.length+' people</div>'+
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">'+
       '<thead><tr style="background:rgba(255,255,255,.025)">'+
-      ['#','Name','Status','Time In','Time Out','Hours'].map(h=>'<th style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:rgba(226,232,245,.4);white-space:nowrap">'+h+'</th>').join('')+
+      ['#','Name','Status','Time In','Time Out','Hours','Location In','Location Out'].map(h=>'<th style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:rgba(226,232,245,.4);white-space:nowrap">'+h+'</th>').join('')+
       '</tr></thead><tbody>'+rows+'</tbody></table></div>';
   } else {
     const [yr,mo] = month.split('-').map(Number);
@@ -1765,26 +1788,85 @@ async function recognizeFace(){
     const recD=await recR.json();
     const existing=(recD.records||{})[name]||{};
     const action=existing.time_in&&!existing.time_out?'out':'in';
+
+    // Get GPS location before marking
+    showMarkStatus('info','📍 Getting location…');
+    const loc = await getLocation();
+
+    const payload = {name, action, time:timeStr, date:dateStr};
+    if(loc){
+      payload.lat      = loc.lat;
+      payload.lng      = loc.lng;
+      payload.accuracy = loc.accuracy;
+      payload.location_name = loc.name || '';
+    }
+
     const r=await fetch('/api/attendance/mark/',{method:'POST',credentials:'same-origin',
       headers:{'Content-Type':'application/json','X-CSRFToken':CSRF()},
-      body:JSON.stringify({name,action,time:timeStr,date:dateStr})});
+      body:JSON.stringify(payload)});
     const d=await r.json();
     if(d.ok){
-      showMarkStatus('success','✅ '+name+' — '+(action==='in'?'Time In':'Time Out')+' at '+timeStr+(action==='out'&&d.record.hours?' · '+d.record.hours+'h':''));
+      let msg='✅ '+name+' — '+(action==='in'?'Time In':'Time Out')+' at '+timeStr;
+      if(action==='out'&&d.record.hours) msg+=' · '+d.record.hours+'h';
+      if(loc) msg+=' 📍 '+(loc.name||loc.lat.toFixed(4)+', '+loc.lng.toFixed(4));
+      showMarkStatus('success', msg);
       loadTodayAttendance();
     } else showMarkStatus('error','❌ '+d.error);
   }catch(e){ showMarkStatus('error','❌ '+e.message); }
   btn.disabled=false; btn.textContent='🔍 Recognize & Mark';
 }
 
+// ── GEOLOCATION HELPER ────────────────────────────────────────────────────
+async function getLocation() {
+  if(!navigator.geolocation) return null;
+  try {
+    const pos = await new Promise((resolve, reject) =>
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true, timeout: 8000, maximumAge: 0
+      })
+    );
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const accuracy = pos.coords.accuracy;
+    // Try reverse geocoding via Nominatim (free, no key needed)
+    let locationName = '';
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
+      const resp = await fetch(url, {headers:{'Accept-Language':'en', 'User-Agent':'HDEC-CMMS/1.0'}});
+      if(resp.ok){
+        const geo = await resp.json();
+        const a = geo.address || {};
+        // Build a short readable name: building/road + city/state
+        const parts = [
+          a.building || a.amenity || a.industrial || a.office,
+          a.road || a.village || a.suburb,
+          a.city || a.town || a.county || a.state_district,
+          a.country_code ? a.country_code.toUpperCase() : ''
+        ].filter(Boolean);
+        locationName = parts.slice(0,3).join(', ');
+      }
+    } catch(_) { /* geocoding failed — coords only */ }
+    return { lat, lng, accuracy, name: locationName };
+  } catch(e) {
+    // User denied or timeout — continue without location
+    console.warn('Geolocation:', e.message);
+    return null;
+  }
+}
+
 function showMarkStatus(type,msg){
   const el=document.getElementById('markStatus');
   el.style.display='block';
-  el.style.background=type==='success'?'rgba(34,197,94,.1)':'rgba(239,68,68,.1)';
-  el.style.border='1px solid rgba('+(type==='success'?'34,197,94':'239,68,68')+',.25)';
-  el.style.color=type==='success'?'#4ade80':'#f87171';
-  el.textContent=msg;
-  setTimeout(()=>el.style.display='none', 6000);
+  const cfg = {
+    success:{ bg:'rgba(34,197,94,.1)',  border:'rgba(34,197,94,.25)',  color:'#4ade80' },
+    error:  { bg:'rgba(239,68,68,.1)',  border:'rgba(239,68,68,.25)',  color:'#f87171' },
+    info:   { bg:'rgba(59,158,255,.1)', border:'rgba(59,158,255,.25)', color:'#60b0ff' },
+  }[type] || cfg.info;
+  el.style.background = cfg.bg;
+  el.style.border      = '1px solid '+cfg.border;
+  el.style.color       = cfg.color;
+  el.textContent = msg;
+  if(type !== 'info') setTimeout(()=>el.style.display='none', 7000);
 }
 
 /* ── Train Camera ── */

@@ -19,7 +19,7 @@
     .page-title span{color:var(--accent)}
     .user-badge{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:30px;border:1px solid rgba(162,89,255,.25);background:rgba(162,89,255,.08);color:#c084fc;font-size:12.5px;font-weight:600}
 
-    .main{padding:32px 40px 60px;max-width:1100px;margin:0 auto}
+    .main{padding:32px 40px 60px;max-width:1200px;margin:0 auto}
 
     /* TOAST */
     .toast{position:fixed;top:80px;right:24px;z-index:9999;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;border:1px solid;animation:slideIn .3s ease;display:none}
@@ -28,29 +28,49 @@
     @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 
     /* GRID */
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px}
-    @media(max-width:800px){.grid{grid-template-columns:1fr}}
+    .top-grid{display:grid;grid-template-columns:520px 1fr;gap:24px;margin-bottom:28px}
+    @media(max-width:900px){.top-grid{grid-template-columns:1fr}}
 
     /* CARD */
     .card{background:var(--s);border:1px solid var(--border);border-radius:20px;overflow:hidden}
-    .card-head{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
-    .card-head h3{font-family:var(--fd);font-size:15px;font-weight:700}
+    .card-head{padding:18px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+    .card-head h3{font-family:var(--fd);font-size:15px;font-weight:700;flex:1}
     .card-head .ico{font-size:18px}
-    .card-body{padding:22px 24px}
+    .card-body{padding:20px 24px}
 
     /* FORM */
-    .field{margin-bottom:14px}
-    .field label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--tm);margin-bottom:6px}
-    .field input,.field select{width:100%;padding:10px 13px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13.5px;font-family:var(--fb);outline:none;transition:all .2s}
+    .field{margin-bottom:12px}
+    .field label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--tm);margin-bottom:5px}
+    .field input,.field select{width:100%;padding:9px 13px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13.5px;font-family:var(--fb);outline:none;transition:all .2s}
     .field input:focus,.field select:focus{border-color:rgba(59,158,255,.35);background:rgba(59,158,255,.04)}
     .field input::placeholder{color:var(--td)}
     .field select option{background:#0f1827}
-    .btn{padding:10px 20px;border-radius:10px;border:none;font-size:13px;font-weight:600;font-family:var(--fb);cursor:pointer;transition:all .2s}
+    .btn{padding:9px 18px;border-radius:10px;border:none;font-size:13px;font-weight:600;font-family:var(--fb);cursor:pointer;transition:all .2s}
     .btn-primary{background:linear-gradient(135deg,var(--accent),#1a52cc);color:#fff}
     .btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(59,158,255,.3)}
     .btn-danger{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2)}
     .btn-danger:hover{background:rgba(239,68,68,.2)}
-    .btn-sm{padding:5px 12px;font-size:11.5px;border-radius:8px}
+    .btn-sm{padding:5px 11px;font-size:11.5px;border-radius:8px}
+    .btn-perm{background:rgba(162,89,255,.1);color:#c084fc;border:1px solid rgba(162,89,255,.2)}
+    .btn-perm:hover{background:rgba(162,89,255,.2)}
+
+    /* PERMISSION MATRIX */
+    .perm-section{margin-top:14px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    .perm-section-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--border)}
+    .perm-section-head span{font-size:12px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.5px}
+    .perm-reset-btn{font-size:11px;color:var(--accent);cursor:pointer;padding:3px 8px;border-radius:6px;border:1px solid rgba(59,158,255,.2);background:rgba(59,158,255,.06)}
+    .perm-reset-btn:hover{background:rgba(59,158,255,.12)}
+    .perm-row{display:grid;grid-template-columns:1fr auto;align-items:center;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.03)}
+    .perm-row:last-child{border-bottom:none}
+    .perm-module{font-size:13px}
+    .perm-toggle{display:flex;gap:4px}
+    .perm-btn{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid transparent;transition:all .15s;user-select:none}
+    .perm-btn.edit{background:rgba(34,197,94,.1);color:#4ade80;border-color:rgba(34,197,94,.2)}
+    .perm-btn.edit.active{background:#22c55e;color:#fff;border-color:#22c55e}
+    .perm-btn.view{background:rgba(59,158,255,.1);color:#60b0ff;border-color:rgba(59,158,255,.2)}
+    .perm-btn.view.active{background:#3b9eff;color:#fff;border-color:#3b9eff}
+    .perm-btn.none{background:rgba(100,116,139,.08);color:var(--td);border-color:rgba(100,116,139,.15)}
+    .perm-btn.none.active{background:#475569;color:#fff;border-color:#475569}
 
     /* USERS TABLE */
     .users-table{width:100%;border-collapse:collapse}
@@ -61,16 +81,29 @@
     .role-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
     .role-admin{background:rgba(162,89,255,.12);color:#c084fc;border:1px solid rgba(162,89,255,.2)}
     .role-viewer{background:rgba(59,158,255,.1);color:#60b0ff;border:1px solid rgba(59,158,255,.18)}
-    .td-actions{display:flex;align-items:center;gap:6px}
+    .role-maintenance_engineer{background:rgba(59,158,255,.1);color:#60b0ff;border:1px solid rgba(59,158,255,.18)}
+    .role-operation_engineer{background:rgba(0,229,200,.1);color:#2dd4bf;border:1px solid rgba(0,229,200,.2)}
+    .role-hse_engineer{background:rgba(234,179,8,.1);color:#fbbf24;border:1px solid rgba(234,179,8,.2)}
+    .role-technician{background:rgba(249,115,22,.1);color:#fb923c;border:1px solid rgba(249,115,22,.2)}
+    .td-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 
-    /* CHANGE PW MODAL */
-    .modal-bg{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;display:none}
+    /* PERM PILLS in table */
+    .perm-pill{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;margin:1px}
+    .perm-pill-edit{background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.2)}
+    .perm-pill-view{background:rgba(59,158,255,.1);color:#60b0ff;border:1px solid rgba(59,158,255,.18)}
+    .perm-pill-none{background:rgba(100,116,139,.08);color:var(--td);border:1px solid rgba(100,116,139,.15)}
+
+    /* MODAL */
+    .modal-bg{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center}
     .modal-bg.open{display:flex}
-    .modal{background:#0a1020;border:1px solid var(--border);border-radius:18px;padding:32px;width:360px;animation:up .25s ease}
+    .modal{background:#0a1020;border:1px solid var(--border);border-radius:18px;padding:28px 30px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;animation:up .25s ease;position:relative}
     @keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-    .modal h3{font-family:var(--fd);font-size:16px;font-weight:700;margin-bottom:20px}
-    .modal .close{position:absolute;right:16px;top:16px;cursor:pointer;color:var(--tm);font-size:18px}
-    .modal-inner{position:relative}
+    .modal h3{font-family:var(--fd);font-size:16px;font-weight:700;margin-bottom:18px}
+    .modal-close{position:absolute;right:18px;top:18px;cursor:pointer;color:var(--tm);font-size:18px;background:none;border:none;line-height:1}
+    .modal-close:hover{color:var(--text)}
+
+    /* STATS */
+    .stat-mini{text-align:center;padding:18px;border-radius:14px;border:1px solid var(--border)}
   </style>
 </head>
 <body>
@@ -87,40 +120,76 @@
   <main class="main">
     <div class="toast" id="toast"></div>
 
-    <div class="grid">
+    <div class="top-grid">
       <!-- CREATE USER -->
       <div class="card">
         <div class="card-head"><span class="ico">➕</span><h3>Create New User</h3></div>
         <div class="card-body">
-          <div class="field"><label>Full Name</label><input type="text" id="newName" placeholder="e.g. Ahmed Hassan"></div>
-          <div class="field"><label>Username</label><input type="text" id="newUsername" placeholder="e.g. ahmed.hassan"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="field"><label>Full Name</label><input type="text" id="newName" placeholder="e.g. Ahmed Hassan"></div>
+            <div class="field"><label>Username</label><input type="text" id="newUsername" placeholder="e.g. ahmed.hassan"></div>
+          </div>
+          <div class="field"><label>Email (for notifications)</label><input type="email" id="newEmail" placeholder="e.g. ahmed@hdec.sa"></div>
           <div class="field"><label>Password</label><input type="password" id="newPassword" placeholder="Min 4 characters"></div>
           <div class="field">
             <label>Role</label>
-            <select id="newRole">
-              <option value="viewer">Viewer — can view only</option>
-              <option value="admin">Admin — can edit + manage users</option>
+            <select id="newRole" onchange="onRoleChange()">
+              <option value="viewer">👁 Viewer — read only</option>
+              <option value="maintenance_engineer">🔧 Maintenance Engineer</option>
+              <option value="operation_engineer">⚙️ Operation Engineer</option>
+              <option value="hse_engineer">🦺 HSE Engineer</option>
+              <option value="technician">🛠️ Technician</option>
+              <option value="admin">👑 Admin — full access</option>
             </select>
           </div>
-          <button class="btn btn-primary" onclick="createUser()">Create User</button>
+
+          <!-- PERMISSION MATRIX -->
+          <div class="perm-section" id="createPermSection">
+            <div class="perm-section-head">
+              <span>Module Permissions</span>
+              <span class="perm-reset-btn" onclick="resetCreatePerms()">↺ Reset to Role Defaults</span>
+            </div>
+            <div id="createPermRows"></div>
+          </div>
+
+          <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="createUser()">Create User</button>
         </div>
       </div>
 
       <!-- STATS -->
       <div class="card">
         <div class="card-head"><span class="ico">📊</span><h3>User Statistics</h3></div>
-        <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding-top:28px">
-          <div style="text-align:center;padding:20px;border-radius:14px;border:1px solid var(--border);background:rgba(162,89,255,.05)">
-            <div style="font-family:var(--fd);font-size:40px;font-weight:800;color:#c084fc" id="adminCount">—</div>
-            <div style="font-size:11px;color:var(--td);text-transform:uppercase;letter-spacing:.7px;margin-top:6px">Admins</div>
+        <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding-top:20px">
+          <div class="stat-mini" style="background:rgba(162,89,255,.05)">
+            <div style="font-family:var(--fd);font-size:38px;font-weight:800;color:#c084fc" id="adminCount">—</div>
+            <div style="font-size:11px;color:var(--td);text-transform:uppercase;letter-spacing:.7px;margin-top:5px">Admins</div>
           </div>
-          <div style="text-align:center;padding:20px;border-radius:14px;border:1px solid var(--border);background:rgba(59,158,255,.05)">
-            <div style="font-family:var(--fd);font-size:40px;font-weight:800;color:#60b0ff" id="viewerCount">—</div>
-            <div style="font-size:11px;color:var(--td);text-transform:uppercase;letter-spacing:.7px;margin-top:6px">Viewers</div>
+          <div class="stat-mini" style="background:rgba(59,158,255,.05)">
+            <div style="font-family:var(--fd);font-size:38px;font-weight:800;color:#60b0ff" id="viewerCount">—</div>
+            <div style="font-size:11px;color:var(--td);text-transform:uppercase;letter-spacing:.7px;margin-top:5px">Viewers</div>
           </div>
-          <div style="grid-column:1/-1;text-align:center;padding:16px;border-radius:14px;border:1px solid var(--border);background:rgba(0,229,200,.04)">
-            <div style="font-family:var(--fd);font-size:36px;font-weight:800;color:#2dd4bf" id="totalCount">—</div>
+          <div class="stat-mini" style="grid-column:1/-1;background:rgba(0,229,200,.04)">
+            <div style="font-family:var(--fd);font-size:34px;font-weight:800;color:#2dd4bf" id="totalCount">—</div>
             <div style="font-size:11px;color:var(--td);text-transform:uppercase;letter-spacing:.7px;margin-top:4px">Total Users</div>
+          </div>
+
+          <!-- Legend -->
+          <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Permission Levels</div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="perm-pill perm-pill-edit">Edit</span>
+                <span style="font-size:12px;color:var(--tm)">Full access — create, modify, delete</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="perm-pill perm-pill-view">View</span>
+                <span style="font-size:12px;color:var(--tm)">Read-only — can see but not change</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="perm-pill perm-pill-none">None</span>
+                <span style="font-size:12px;color:var(--tm)">No access — hidden from user</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -131,7 +200,13 @@
       <div class="card-head"><span class="ico">👥</span><h3>All Users</h3></div>
       <div style="overflow-x:auto">
         <table class="users-table">
-          <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Actions</th></tr></thead>
+          <thead><tr>
+            <th>Name / Email</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Module Access</th>
+            <th>Actions</th>
+          </tr></thead>
           <tbody id="usersTableBody"></tbody>
         </table>
       </div>
@@ -141,13 +216,33 @@
 
 <!-- CHANGE PASSWORD MODAL -->
 <div class="modal-bg" id="pwModal">
-  <div class="modal modal-inner">
-    <span class="close" onclick="closePwModal()">✕</span>
-    <h3>Change Password</h3>
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('pwModal')">✕</button>
+    <h3>🔑 Change Password</h3>
     <input type="hidden" id="pwUsername">
-    <div class="field"><label>Username</label><input type="text" id="pwUsernameDisplay" disabled></div>
+    <div class="field"><label>User</label><input type="text" id="pwUsernameDisplay" disabled></div>
     <div class="field"><label>New Password</label><input type="password" id="newPw" placeholder="Min 4 characters"></div>
-    <button class="btn btn-primary" onclick="submitPw()" style="width:100%;margin-top:4px">Update Password</button>
+    <button class="btn btn-primary" onclick="submitPw()" style="width:100%;margin-top:6px">Update Password</button>
+  </div>
+</div>
+
+<!-- PERMISSIONS MODAL -->
+<div class="modal-bg" id="permModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('permModal')">✕</button>
+    <h3>🔒 Module Permissions</h3>
+    <div id="permModalUserInfo" style="font-size:13px;color:var(--tm);margin-bottom:14px"></div>
+    <input type="hidden" id="permUsername">
+
+    <div class="perm-section">
+      <div class="perm-section-head">
+        <span>Access per Module</span>
+        <span class="perm-reset-btn" onclick="resetModalPerms()">↺ Reset to Role Defaults</span>
+      </div>
+      <div id="permModalRows"></div>
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;margin-top:16px" onclick="savePermissions()">Save Permissions</button>
   </div>
 </div>
 
@@ -159,67 +254,140 @@ function drawBg(){ctx.clearRect(0,0,W,H);ctx.strokeStyle='rgba(59,158,255,0.02)'
 drawBg();
 
 const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+const MODULES = {{ modules_json|safe }};
+const DEFAULTS = {{ defaults_json|safe }};
 let allUsers = [];
+// Current create-form permissions state
+let createPerms = {};
+// Current modal permissions state
+let modalPerms = {};
+let modalUserRole = 'viewer';
 
+// ── UTILS ─────────────────────────────────────────────────────────────────
 function showToast(msg, type='success'){
   const t=document.getElementById('toast');
   t.textContent=msg; t.className=`toast ${type}`; t.style.display='block';
-  setTimeout(()=>{t.style.display='none'},3000);
+  setTimeout(()=>{t.style.display='none'},3200);
 }
-
 async function api(body){
   const r=await fetch('/api/admin/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify(body)});
   return r.json();
 }
+function closeModal(id){ document.getElementById(id).classList.remove('open') }
 
-async function loadUsers(){
-  // Fetch users list by re-reading the page data injected below
-  renderUsers(USERS_DATA);
+// ── PERMISSION ROWS RENDERER ───────────────────────────────────────────────
+function renderPermRows(containerId, permsObj, onChange) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  for (const [mod, label] of Object.entries(MODULES)) {
+    const val = permsObj[mod] || 'view';
+    const row = document.createElement('div');
+    row.className = 'perm-row';
+    row.innerHTML = `
+      <span class="perm-module">${label}</span>
+      <div class="perm-toggle" data-mod="${mod}">
+        <span class="perm-btn edit ${val==='edit'?'active':''}" onclick="setPerm(this,'${mod}','edit','${containerId}')">Edit</span>
+        <span class="perm-btn view ${val==='view'?'active':''}" onclick="setPerm(this,'${mod}','view','${containerId}')">View</span>
+        <span class="perm-btn none ${val==='none'?'active':''}" onclick="setPerm(this,'${mod}','none','${containerId}')">None</span>
+      </div>`;
+    container.appendChild(row);
+  }
 }
 
-function renderUsers(users){
-  allUsers = users;
-  const admins=users.filter(u=>u.role==='admin').length;
-  const viewers=users.filter(u=>u.role==='viewer').length;
-  document.getElementById('adminCount').textContent=admins;
-  document.getElementById('viewerCount').textContent=viewers;
-  document.getElementById('totalCount').textContent=users.length;
-
-  const tbody=document.getElementById('usersTableBody');
-  tbody.innerHTML=users.map(u=>`
-    <tr>
-      <td><strong>${u.name}</strong></td>
-      <td style="color:var(--tm);font-family:monospace;font-size:12.5px">${u.username}</td>
-      <td><span class="role-badge role-${u.role}">${u.role==='admin'?'👑 Admin':'👁 Viewer'}</span></td>
-      <td>
-        <div class="td-actions">
-          <button class="btn btn-sm" style="background:rgba(59,158,255,.1);color:#60b0ff;border:1px solid rgba(59,158,255,.2)" onclick="openPwModal('${u.username}','${u.name}')">🔑 Password</button>
-          ${u.username!=='admin'?`<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.username}','${u.name}')">🗑 Delete</button>`:'<span style="font-size:11px;color:var(--td)">Protected</span>'}
-        </div>
-      </td>
-    </tr>`).join('');
+function setPerm(btn, mod, level, containerId) {
+  // Update visual
+  const group = btn.closest('.perm-toggle');
+  group.querySelectorAll('.perm-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Update state
+  if (containerId === 'createPermRows') {
+    createPerms[mod] = level;
+  } else if (containerId === 'permModalRows') {
+    modalPerms[mod] = level;
+  }
 }
 
+// ── CREATE FORM ─────────────────────────────────────────────────────────────
+function onRoleChange() {
+  const role = document.getElementById('newRole').value;
+  createPerms = Object.assign({}, DEFAULTS[role] || {});
+  renderPermRows('createPermRows', createPerms);
+}
+
+function resetCreatePerms() {
+  const role = document.getElementById('newRole').value;
+  createPerms = Object.assign({}, DEFAULTS[role] || {});
+  renderPermRows('createPermRows', createPerms);
+}
+
+// ── CREATE USER ────────────────────────────────────────────────────────────
 async function createUser(){
   const name=document.getElementById('newName').value.trim();
   const username=document.getElementById('newUsername').value.trim();
+  const email=document.getElementById('newEmail').value.trim();
   const password=document.getElementById('newPassword').value;
   const role=document.getElementById('newRole').value;
-  if(!name||!username||!password){showToast('All fields are required','error');return}
-  const r=await api({action:'create',name,username,password,role});
+  if(!name||!username||!password){showToast('Name, username and password are required','error');return}
+  const r=await api({action:'create',name,username,password,role,email,permissions:createPerms});
   if(r.ok){
     showToast(`✓ User "${username}" created`);
-    // Add to local list and re-render
-    allUsers.push({name,username,role});
+    allUsers.push({name,username,role,email,permissions:Object.assign({},createPerms)});
     renderUsers(allUsers);
-    document.getElementById('newName').value='';
-    document.getElementById('newUsername').value='';
-    document.getElementById('newPassword').value='';
+    ['newName','newUsername','newEmail','newPassword'].forEach(id=>document.getElementById(id).value='');
+    // Reset perms to role defaults
+    onRoleChange();
   } else {
     showToast(r.msg,'error');
   }
 }
 
+// ── USERS TABLE ────────────────────────────────────────────────────────────
+const ROLE_LABELS = {
+  'admin': '👑 Admin', 'viewer': '👁 Viewer',
+  'maintenance_engineer': '🔧 Maint. Engineer',
+  'operation_engineer': '⚙️ Op. Engineer',
+  'hse_engineer': '🦺 HSE Engineer',
+  'technician': '🛠️ Technician',
+};
+
+function renderUsers(users){
+  allUsers = users;
+  document.getElementById('adminCount').textContent=users.filter(u=>u.role==='admin').length;
+  document.getElementById('viewerCount').textContent=users.filter(u=>u.role==='viewer').length;
+  document.getElementById('totalCount').textContent=users.length;
+
+  const tbody=document.getElementById('usersTableBody');
+  tbody.innerHTML=users.map(u=>{
+    const perms = u.permissions || {};
+    // Show compact pills for non-admin
+    let permHtml = '';
+    if (u.role === 'admin') {
+      permHtml = '<span style="font-size:11px;color:var(--td)">All modules — full access</span>';
+    } else {
+      permHtml = Object.entries(MODULES).map(([mod, label]) => {
+        const level = perms[mod] || 'view';
+        if (level === 'none') return '';
+        return `<span class="perm-pill perm-pill-${level}" title="${label}">${label.replace(/^[^\s]+\s/,'')} · ${level}</span>`;
+      }).filter(Boolean).join('') || '<span style="font-size:11px;color:var(--td)">No access</span>';
+    }
+    return `
+    <tr>
+      <td><strong>${u.name}</strong><br><span style="font-size:11px;color:var(--tm)">${u.email||''}</span></td>
+      <td style="color:var(--tm);font-family:monospace;font-size:12.5px">${u.username}</td>
+      <td><span class="role-badge role-${u.role}">${ROLE_LABELS[u.role]||u.role}</span></td>
+      <td style="max-width:320px">${permHtml}</td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-sm btn-perm" onclick="openPermModal('${u.username}','${u.name}','${u.role}')">🔒 Permissions</button>
+          <button class="btn btn-sm" style="background:rgba(59,158,255,.1);color:#60b0ff;border:1px solid rgba(59,158,255,.2)" onclick="openPwModal('${u.username}','${u.name}')">🔑 Password</button>
+          ${u.username!=='admin'?`<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.username}','${u.name}')">🗑</button>`:'<span style="font-size:11px;color:var(--td)">Protected</span>'}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── DELETE ─────────────────────────────────────────────────────────────────
 async function deleteUser(username, name){
   if(!confirm(`Delete user "${name}" (${username})?`))return;
   const r=await api({action:'delete',username});
@@ -232,28 +400,66 @@ async function deleteUser(username, name){
   }
 }
 
+// ── PASSWORD MODAL ─────────────────────────────────────────────────────────
 function openPwModal(username, name){
   document.getElementById('pwUsername').value=username;
   document.getElementById('pwUsernameDisplay').value=`${name} (${username})`;
   document.getElementById('newPw').value='';
   document.getElementById('pwModal').classList.add('open');
 }
-function closePwModal(){ document.getElementById('pwModal').classList.remove('open') }
-
 async function submitPw(){
   const username=document.getElementById('pwUsername').value;
   const password=document.getElementById('newPw').value;
   if(!password||password.length<4){showToast('Password must be at least 4 characters','error');return}
   const r=await api({action:'change_password',username,password});
-  if(r.ok){showToast('✓ Password updated');closePwModal();}
+  if(r.ok){showToast('✓ Password updated');closeModal('pwModal');}
   else showToast(r.msg,'error');
 }
 
-document.getElementById('pwModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closePwModal()});
+// ── PERMISSIONS MODAL ──────────────────────────────────────────────────────
+function openPermModal(username, name, role) {
+  const user = allUsers.find(u => u.username === username);
+  modalPerms = Object.assign({}, DEFAULTS[role] || {}, user?.permissions || {});
+  modalUserRole = role;
+  document.getElementById('permUsername').value = username;
+  document.getElementById('permModalUserInfo').textContent =
+    `${name} (${username}) · ${ROLE_LABELS[role] || role}`;
+  renderPermRows('permModalRows', modalPerms);
+  document.getElementById('permModal').classList.add('open');
+}
 
-// Inject server-side users
+function resetModalPerms() {
+  modalPerms = Object.assign({}, DEFAULTS[modalUserRole] || {});
+  renderPermRows('permModalRows', modalPerms);
+}
+
+async function savePermissions() {
+  const username = document.getElementById('permUsername').value;
+  const r = await api({action:'update_permissions', username, permissions: modalPerms});
+  if (r.ok) {
+    showToast('✓ Permissions updated');
+    const idx = allUsers.findIndex(u => u.username === username);
+    if (idx >= 0) allUsers[idx].permissions = Object.assign({}, modalPerms);
+    renderUsers(allUsers);
+    closeModal('permModal');
+  } else {
+    showToast(r.msg || 'Failed', 'error');
+  }
+}
+
+// ── CLOSE MODALS ON BACKDROP ───────────────────────────────────────────────
+['pwModal','permModal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal(id);
+  });
+});
+
+// ── INIT ───────────────────────────────────────────────────────────────────
 const USERS_DATA = {{ users_json|safe }};
-loadUsers();
+allUsers = USERS_DATA;
+renderUsers(allUsers);
+// Init create form with default role permissions
+onRoleChange();
 </script>
 </body>
 </html>

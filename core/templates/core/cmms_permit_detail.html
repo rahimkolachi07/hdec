@@ -1,0 +1,872 @@
+{% load cmms_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>{% if permit %}Permit {{ permit.permit_number|default:"(Pending)" }}{% else %}New PTW{% endif %} — HDEC CMMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#04060f;--s:rgba(255,255,255,.03);--s2:rgba(255,255,255,.06);--border:rgba(255,255,255,.07);--accent:#3b9eff;--a2:#00e5c8;--text:#e8edf5;--tm:rgba(232,237,245,.45);--td:rgba(232,237,245,.22);--fd:'Syne',sans-serif;--fb:'DM Sans',sans-serif;--r:14px}
+    body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100vh}
+    canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+    .wrap{position:relative;z-index:1}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 32px;border-bottom:1px solid var(--border);background:rgba(4,6,15,.9);backdrop-filter:blur(20px);position:sticky;top:0;z-index:100;gap:10px;flex-wrap:wrap}
+    .tl{display:flex;align-items:center;gap:10px}
+    .back{padding:6px 14px;border-radius:30px;border:1px solid var(--border);background:var(--s);color:var(--tm);font-size:12px;text-decoration:none;transition:all .2s;white-space:nowrap}
+    .back:hover{color:var(--text)}
+    .page-title{font-family:var(--fd);font-size:15px;font-weight:700}.page-title span{color:var(--accent)}
+    .topbar-right{display:flex;gap:6px;flex-wrap:wrap}
+    .btn{padding:8px 16px;border-radius:10px;border:none;font-size:12.5px;font-weight:600;font-family:var(--fb);cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+    .btn-primary{background:linear-gradient(135deg,var(--accent),#1a52cc);color:#fff}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(59,158,255,.3)}
+    .btn-ghost{background:var(--s);border:1px solid var(--border);color:var(--tm)}
+    .btn-ghost:hover{color:var(--text);border-color:rgba(59,158,255,.25)}
+    .btn-success{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff}
+    .btn-success:hover{transform:translateY(-1px)}
+    .btn-warning{background:linear-gradient(135deg,#d97706,#b45309);color:#fff}
+    .btn-warning:hover{transform:translateY(-1px)}
+    .btn-danger{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+    .btn-sm{padding:5px 12px;font-size:11.5px;border-radius:8px}
+
+    .main{padding:20px 32px 60px;max-width:1200px;margin:0 auto}
+    .layout{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+    @media(max-width:880px){.layout{grid-template-columns:1fr}}
+
+    /* STATUS BANNER */
+    .status-banner{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-radius:12px;border:1px solid;margin-bottom:20px;flex-wrap:wrap;gap:8px}
+    .sb-label{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
+    .sb-pending_issue .sb-label{color:#fbbf24}.sb-pending_issue{background:rgba(251,191,36,.06);border-color:rgba(251,191,36,.2)}
+    .sb-pending_hse .sb-label{color:#fb923c}.sb-pending_hse{background:rgba(249,115,22,.06);border-color:rgba(249,115,22,.2)}
+    .sb-active .sb-label{color:#4ade80}.sb-active{background:rgba(34,197,94,.06);border-color:rgba(34,197,94,.2)}
+    .sb-closed .sb-label{color:#94a3b8}.sb-closed{background:rgba(100,116,139,.06);border-color:rgba(100,116,139,.18)}
+    .sb-cancelled .sb-label{color:#f87171}.sb-cancelled{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.2)}
+    .sb-meta{font-size:11.5px;color:var(--tm)}
+
+    /* WORKFLOW */
+    .workflow{display:flex;margin-bottom:24px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+    .wf-step{flex:1;padding:10px 14px;border-right:1px solid var(--border);min-width:120px}
+    .wf-step:last-child{border-right:none}
+    .wf-done{background:rgba(34,197,94,.06)}
+    .wf-current{background:rgba(59,158,255,.08)}
+    .wf-pending{background:rgba(255,255,255,.01)}
+    .wf-num{font-size:11px;font-weight:700;margin-bottom:2px}
+    .wf-done .wf-num{color:#4ade80}.wf-current .wf-num{color:var(--accent)}.wf-pending .wf-num{color:var(--td)}
+    .wf-title{font-size:12px;font-weight:700}
+    .wf-done .wf-title{color:#4ade80}.wf-current .wf-title{color:var(--accent)}.wf-pending .wf-title{color:var(--td)}
+    .wf-sub{font-size:10.5px;color:var(--td);margin-top:1px}
+
+    /* CARDS */
+    .card{background:var(--s);border:1px solid var(--border);border-radius:var(--r);margin-bottom:14px;overflow:hidden}
+    .card-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.01)}
+    .card-head h3{font-family:var(--fd);font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
+    .card-body{padding:16px}
+
+    /* FORM FIELDS */
+    .field{margin-bottom:11px}
+    .field label{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:5px}
+    .field input,.field select,.field textarea{width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12.5px;font-family:var(--fb);outline:none;transition:border-color .2s;resize:vertical}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:rgba(59,158,255,.35);background:rgba(59,158,255,.04)}
+    .field select option{background:#0f1827}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+    /* CHECKBOXES GRID */
+    .cb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;padding:12px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.01)}
+    .cb-item{display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer;padding:4px 6px;border-radius:7px;transition:background .15s}
+    .cb-item:hover{background:rgba(255,255,255,.04)}
+    .cb-item input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+
+    /* PRECAUTION TABLE */
+    .prec-table{width:100%;border-collapse:collapse;font-size:12px}
+    .prec-table th{padding:7px 10px;text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--tm);font-weight:700;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+    .prec-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle}
+    .prec-table tr:last-child td{border-bottom:none}
+    .prec-table tr:hover td{background:rgba(255,255,255,.02)}
+    .yn-group{display:flex;gap:14px}
+    .yn-label{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer}
+    .yn-label input{accent-color:var(--accent)}
+
+    /* SIGNATURE */
+    .sig-canvas{width:100%;height:100px;border-radius:9px;border:1px solid var(--border);background:rgba(255,255,255,.03);cursor:crosshair;display:block}
+    .sig-actions{display:flex;gap:6px;margin-top:6px}
+    .sig-preview img{max-height:70px;border-radius:7px;border:1px solid var(--border)}
+    .sig-signed{font-size:11.5px;color:#4ade80;margin-top:4px}
+
+    /* WORKERS TABLE */
+    .workers-table{width:100%;border-collapse:collapse;font-size:12px}
+    .workers-table th{padding:7px 10px;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--tm);font-weight:700;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02);text-align:left}
+    .workers-table td{padding:5px 6px;border-bottom:1px solid rgba(255,255,255,.03)}
+    .workers-table input{width:100%;padding:5px 8px;border-radius:7px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px;font-family:var(--fb);outline:none}
+    .workers-table input:focus{border-color:rgba(59,158,255,.35)}
+
+    /* SUMMARY ROWS */
+    .sum-row{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);align-items:flex-start}
+    .sum-row:last-child{border-bottom:none}
+    .sum-lbl{font-size:11.5px;color:var(--tm);font-weight:600;min-width:120px;flex-shrink:0}
+    .sum-val{font-size:12.5px;flex:1;white-space:pre-wrap}
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid}
+    .b-pending_issue{background:rgba(251,191,36,.1);color:#fbbf24;border-color:rgba(251,191,36,.25)}
+    .b-pending_hse{background:rgba(249,115,22,.1);color:#fb923c;border-color:rgba(249,115,22,.25)}
+    .b-active{background:rgba(34,197,94,.1);color:#4ade80;border-color:rgba(34,197,94,.25)}
+    .b-closed{background:rgba(100,116,139,.1);color:#94a3b8;border-color:rgba(100,116,139,.2)}
+    .b-cancelled{background:rgba(239,68,68,.1);color:#f87171;border-color:rgba(239,68,68,.2)}
+
+    /* ACTION PANEL */
+    .action-card{background:var(--s);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px}
+    .action-card h3{font-family:var(--fd);font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px}
+    .action-sep{height:1px;background:var(--border);margin:12px 0}
+
+    .toast{position:fixed;top:80px;right:24px;z-index:9999;padding:11px 18px;border-radius:11px;font-size:13px;font-weight:500;border:1px solid;display:none;animation:fadeIn .3s ease}
+    .toast.success{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.25);color:#4ade80}
+    .toast.error{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.25);color:#f87171}
+    @keyframes fadeIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+    .spinner{display:none;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .iso-badge-yes{background:rgba(239,68,68,.08);color:#f87171;border:1px solid rgba(239,68,68,.2);padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700}
+    .iso-badge-no{background:rgba(34,197,94,.08);color:#4ade80;border:1px solid rgba(34,197,94,.2);padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700}
+  </style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="toast" class="toast"></div>
+<div class="wrap">
+  <header class="topbar">
+    <div class="tl">
+      <a href="/cmms/permits/" class="back">← Permits</a>
+      <div class="page-title">
+        {% if permit %}🔐 Permit <span>{{ permit.permit_number|default:"(Pending Number)" }}</span>
+        {% else %}🔐 <span>New PTW Application</span>{% endif %}
+      </div>
+    </div>
+    <div class="topbar-right">
+      {% if permit %}
+      <a href="/cmms/permits/{{ permit.id }}/pdf/" target="_blank" class="btn btn-ghost btn-sm">📄 PTW PDF</a>
+      <a href="/cmms/permits/{{ permit.id }}/docx/" class="btn btn-ghost btn-sm">📝 Word</a>
+      {% if permit.isolation_required %}
+      <a href="/cmms/permits/{{ permit.id }}/icc/" target="_blank" class="btn btn-ghost btn-sm">🔒 ICC PDF</a>
+      {% endif %}
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="main">
+  {% if permit %}
+  <!-- ═══════════════════════════ EXISTING PERMIT ═══════════════════════════ -->
+
+  <!-- STATUS BANNER -->
+  <div class="status-banner sb-{{ permit.status }}">
+    <div class="sb-label">
+      {% if permit.status == 'pending_issue' %}⏳ Awaiting Issuance
+      {% elif permit.status == 'pending_hse' %}🔄 Awaiting HSE Sign-off
+      {% elif permit.status == 'active' %}✅ Permit Active
+      {% elif permit.status == 'closed' %}🔒 Permit Closed
+      {% else %}✕ Cancelled{% endif %}
+    </div>
+    <div class="sb-meta">
+      {% if permit.permit_number %}PTW: <strong>{{ permit.permit_number }}</strong>&nbsp;·&nbsp;{% endif %}
+      {% if permit.isolation_cert_number %}ICC: <strong>{{ permit.isolation_cert_number }}</strong>&nbsp;·&nbsp;{% endif %}
+      {{ permit.created_at|slice:":10" }}
+    </div>
+  </div>
+
+  <!-- WORKFLOW -->
+  <div class="workflow">
+    <div class="wf-step {% if permit.status != 'cancelled' %}wf-done{% else %}wf-pending{% endif %}">
+      <div class="wf-num">✓ Step 1</div>
+      <div class="wf-title">Application</div>
+      <div class="wf-sub">{{ permit.receiver_name }}</div>
+    </div>
+    <div class="wf-step {% if permit.status in 'pending_hse,active,closed' %}wf-done{% elif permit.status == 'pending_issue' %}wf-current{% else %}wf-pending{% endif %}">
+      <div class="wf-num">{% if permit.status in 'pending_hse,active,closed' %}✓{% else %}2{% endif %} Issuance</div>
+      <div class="wf-title">Operation Eng.</div>
+      <div class="wf-sub">{{ permit.issuer_name|default:"Pending" }}</div>
+    </div>
+    <div class="wf-step {% if permit.status in 'active,closed' %}wf-done{% elif permit.status == 'pending_hse' %}wf-current{% else %}wf-pending{% endif %}">
+      <div class="wf-num">{% if permit.status in 'active,closed' %}✓{% else %}3{% endif %} HSE</div>
+      <div class="wf-title">HSE Sign-off</div>
+      <div class="wf-sub">{{ permit.hse_name|default:"Pending" }}</div>
+    </div>
+    <div class="wf-step {% if permit.status == 'closed' %}wf-done{% elif permit.status == 'active' %}wf-current{% else %}wf-pending{% endif %}">
+      <div class="wf-num">{% if permit.status == 'closed' %}✓{% else %}4{% endif %} Close</div>
+      <div class="wf-title">Work Complete</div>
+      <div class="wf-sub">{% if permit.closed_at %}{{ permit.closed_at|slice:":10" }}{% else %}Pending{% endif %}</div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- LEFT: PERMIT DETAILS -->
+    <div>
+      <div class="card">
+        <div class="card-head"><h3>🏭 Work Details</h3></div>
+        <div class="card-body">
+          <div class="sum-row"><div class="sum-lbl">Equipment</div><div class="sum-val">{{ permit.equipment }}</div></div>
+          <div class="sum-row"><div class="sum-lbl">Location</div><div class="sum-val">{{ permit.location }}</div></div>
+          <div class="sum-row"><div class="sum-lbl">Work Type</div><div class="sum-val">{{ work_types|get_dict:permit.work_type|default:permit.work_type }}</div></div>
+          <div class="sum-row"><div class="sum-lbl">Job Description</div><div class="sum-val">{{ permit.job_description }}</div></div>
+          <div class="sum-row"><div class="sum-lbl">Tools/Equipment</div><div class="sum-val">{{ permit.tools_equipment|default:"—" }}</div></div>
+          <div class="sum-row"><div class="sum-lbl">Workers</div><div class="sum-val">{{ permit.workers|default:"—" }}</div></div>
+          <div class="sum-row"><div class="sum-lbl">Employees</div><div class="sum-val">{{ permit.num_employees|default:"—" }}</div></div>
+          <div class="sum-row"><div class="sum-lbl">Valid From</div><div class="sum-val">{{ permit.valid_from }}</div></div>
+          <div class="sum-row"><div class="sum-lbl">Valid Until</div><div class="sum-val">{{ permit.valid_until }}</div></div>
+          <div class="sum-row"><div class="sum-lbl">Energy State</div>
+            <div class="sum-val">
+              {% if permit.energized_lines %}⚡ Energized Lines/Equipment{% endif %}
+              {% if permit.de_energized_lines %}✅ De-Energized{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>⚠️ Risks &amp; PPE</h3></div>
+        <div class="card-body">
+          <div style="font-size:11.5px;color:var(--tm);font-weight:700;margin-bottom:8px">RISKS IDENTIFIED</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+            {% with r=permit.risks %}
+            {% if r.electrocution %}<span class="badge b-cancelled">Electrocution</span>{% endif %}
+            {% if r.arc_flash %}<span class="badge b-cancelled">Arc Flash</span>{% endif %}
+            {% if r.flying_particles %}<span class="badge b-cancelled">Flying Particles</span>{% endif %}
+            {% if r.noise %}<span class="badge b-pending_issue">Noise</span>{% endif %}
+            {% if r.falling_objects %}<span class="badge b-cancelled">Falling Objects</span>{% endif %}
+            {% if r.protruding_objects %}<span class="badge b-cancelled">Protruding Objects</span>{% endif %}
+            {% if r.tripping_slipping %}<span class="badge b-pending_issue">Tripping/Slipping</span>{% endif %}
+            {% if r.electric_shock %}<span class="badge b-cancelled">Electric Shock</span>{% endif %}
+            {% if r.fire %}<span class="badge b-cancelled">Fire</span>{% endif %}
+            {% if r.manual_handling %}<span class="badge b-pending_issue">Manual Handling</span>{% endif %}
+            {% if r.electric_burn %}<span class="badge b-cancelled">Electric Burn</span>{% endif %}
+            {% if r.near_overhead_lines %}<span class="badge b-cancelled">Near Overhead Lines</span>{% endif %}
+            {% if r.other_risk %}<span class="badge b-pending_hse">{{ r.other_risk }}</span>{% endif %}
+            {% endwith %}
+          </div>
+          <div style="font-size:11.5px;color:var(--tm);font-weight:700;margin-bottom:8px">PPE REQUIRED</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            {% with p=permit.ppe_required %}
+            {% if p.helmet %}<span class="badge b-active">Helmet</span>{% endif %}
+            {% if p.safety_shoes %}<span class="badge b-active">Safety Shoes</span>{% endif %}
+            {% if p.elec_gloves %}<span class="badge b-active">Elec. Gloves{% if p.elec_gloves_rating %} ({{ p.elec_gloves_rating }}){% endif %}</span>{% endif %}
+            {% if p.half_mask %}<span class="badge b-active">Half Mask</span>{% endif %}
+            {% if p.safety_goggles %}<span class="badge b-active">Safety Goggles</span>{% endif %}
+            {% if p.reflective_vest %}<span class="badge b-active">Reflective Vest</span>{% endif %}
+            {% if p.dust_mask %}<span class="badge b-active">Dust Mask</span>{% endif %}
+            {% if p.safety_clothes %}<span class="badge b-active">Safety Clothes</span>{% endif %}
+            {% if p.face_shield %}<span class="badge b-active">Face Shield</span>{% endif %}
+            {% if p.arc_flash_ppe %}<span class="badge b-active">Arc Flash PPE</span>{% endif %}
+            {% if p.ear_plugs %}<span class="badge b-active">Ear Plugs</span>{% endif %}
+            {% if p.other_ppe %}<span class="badge b-active">{{ p.other_ppe }}</span>{% endif %}
+            {% endwith %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>🔒 Isolation</h3></div>
+        <div class="card-body">
+          <div class="sum-row">
+            <div class="sum-lbl">Required</div>
+            <div class="sum-val">
+              {% if permit.isolation_required %}<span class="iso-badge-yes">⚡ YES</span>
+              {% else %}<span class="iso-badge-no">✓ NO</span>{% endif %}
+            </div>
+          </div>
+          {% if permit.isolation_required %}
+          <div class="sum-row"><div class="sum-lbl">ICC No.</div><div class="sum-val">{{ permit.isolation_cert_number|default:"TBD by HSE" }}</div></div>
+          <div class="sum-row"><div class="sum-lbl">SLD Drawing</div><div class="sum-val">{{ permit.sld_drawing_no|default:"—" }}</div></div>
+          <div class="sum-row"><div class="sum-lbl">Details</div><div class="sum-val">{{ permit.isolation_details|default:"—" }}</div></div>
+          {% with it=permit.isolation_type %}
+          {% if it %}
+          <div class="sum-row"><div class="sum-lbl">Type</div>
+            <div class="sum-val">
+              {% if it.electrical %}Electrical &nbsp;{% endif %}
+              {% if it.mechanical %}Mechanical &nbsp;{% endif %}
+              {% if it.earthing %}Earthing &nbsp;{% endif %}
+              {% if it.others %}{{ it.others }}{% endif %}
+            </div>
+          </div>
+          {% endif %}
+          {% endwith %}
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- SIGNATURES -->
+      <div class="card">
+        <div class="card-head"><h3>✍️ Signatures</h3></div>
+        <div class="card-body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
+          {% for label, name, sig, date in sig_triples %}
+          <div>
+            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tm);margin-bottom:6px">{{ label }}</div>
+            <div style="font-size:12.5px;margin-bottom:4px">{{ name|default:"—" }}</div>
+            {% if sig %}
+            <div class="sig-preview"><img src="{{ sig }}" alt="sig"></div>
+            <div class="sig-signed">✓ {{ date|slice:":10" }}</div>
+            {% else %}
+            <div style="height:50px;border:1px dashed rgba(255,255,255,.1);border-radius:8px;display:flex;align-items:center;justify-content:center">
+              <span style="font-size:11.5px;color:var(--td)">Not yet signed</span>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: ACTION PANEL -->
+    <div>
+      {% if can_issue and permit.status == 'pending_issue' %}
+      <div class="action-card">
+        <h3>⚙️ Issue Permit</h3>
+        <p style="font-size:12px;color:var(--tm);margin-bottom:12px">Sign to authorize work to proceed.</p>
+        <div style="margin-bottom:10px">
+          <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tm);margin-bottom:6px">Your Signature</div>
+          <canvas class="sig-canvas" id="issuerSig"></canvas>
+          <div class="sig-actions"><button class="btn btn-ghost btn-sm" onclick="clearSig('issuerSig')">Clear</button></div>
+        </div>
+        <button class="btn btn-success" style="width:100%" onclick="issuePermit()">
+          <span id="issueSpinner" class="spinner"></span>⚙️ Issue Permit
+        </button>
+        <div class="action-sep"></div>
+        <button class="btn btn-danger btn-sm" style="width:100%" onclick="cancelPermit()">✕ Reject</button>
+      </div>
+      {% endif %}
+
+      {% if can_hse_sign and permit.status == 'pending_hse' %}
+      <div class="action-card">
+        <h3>🦺 HSE Sign-off</h3>
+        <div class="field"><label>Permit Number *</label><input id="hsePermitNum" placeholder="PTW-2026-0001" style="font-family:monospace"></div>
+        {% if permit.isolation_required %}
+        <div class="field"><label>Isolation Cert. No. *</label><input id="hseIsoNum" placeholder="ICC-2026-0001" style="font-family:monospace"></div>
+        {% endif %}
+        <div style="margin-bottom:10px">
+          <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tm);margin-bottom:6px">Your Signature</div>
+          <canvas class="sig-canvas" id="hseSig"></canvas>
+          <div class="sig-actions"><button class="btn btn-ghost btn-sm" onclick="clearSig('hseSig')">Clear</button></div>
+        </div>
+        <button class="btn btn-warning" style="width:100%" onclick="hseSignOff()">
+          <span id="hseSpinner" class="spinner"></span>🦺 Approve &amp; Sign
+        </button>
+      </div>
+      {% endif %}
+
+      {% if can_close and permit.status == 'active' %}
+      <div class="action-card">
+        <h3>🔒 Close Permit</h3>
+        <button class="btn btn-ghost" style="width:100%" onclick="closePermit()">🔒 Close Permit</button>
+      </div>
+      {% endif %}
+
+      <div class="action-card">
+        <h3>📄 Documents</h3>
+        <a href="/cmms/permits/{{ permit.id }}/pdf/" target="_blank" class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:6px">📄 PTW PDF</a>
+        <a href="/cmms/permits/{{ permit.id }}/docx/" class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:6px">📝 Download Word (.docx)</a>
+        {% if permit.isolation_required %}
+        <a href="/cmms/permits/{{ permit.id }}/icc/" target="_blank" class="btn btn-ghost" style="width:100%;justify-content:center">🔒 ICC PDF</a>
+        {% endif %}
+      </div>
+
+      <div class="action-card">
+        <h3>📋 Summary</h3>
+        <div class="sum-row" style="padding:6px 0"><div class="sum-lbl" style="font-size:11px">Receiver</div><div class="sum-val" style="font-size:12px">{{ permit.receiver_name }}</div></div>
+        <div class="sum-row" style="padding:6px 0"><div class="sum-lbl" style="font-size:11px">Issuer</div><div class="sum-val" style="font-size:12px">{{ permit.issuer_name|default:"—" }}</div></div>
+        <div class="sum-row" style="padding:6px 0"><div class="sum-lbl" style="font-size:11px">HSE</div><div class="sum-val" style="font-size:12px">{{ permit.hse_name|default:"—" }}</div></div>
+        <div class="sum-row" style="padding:6px 0"><div class="sum-lbl" style="font-size:11px">Status</div><div class="sum-val"><span class="badge b-{{ permit.status }}">{{ permit.status|title }}</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- ═══════════════════════════ NEW PERMIT FORM ════════════════════════════ -->
+  {% if current_user.role in 'maintenance_engineer,admin' %}
+  <div style="max-width:900px;margin:0 auto">
+
+    <!-- SECTION 1: WORK DETAILS -->
+    <div class="card">
+      <div class="card-head"><h3>📋 Section 1 — Work Details</h3></div>
+      <div class="card-body">
+        <div class="field"><label>Job Description *</label><textarea id="nDesc" rows="3" placeholder="Describe work to be performed..."></textarea></div>
+        <div class="field-row">
+          <div class="field"><label>Equipment / Tag No. *</label><input id="nEquip" placeholder="e.g. Transformer T1, CB-101"></div>
+          <div class="field"><label>Location *</label><input id="nLoc" placeholder="e.g. Substation A, Panel Room 2"></div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Work Type *</label>
+            <select id="nType">
+              {% for key, label in work_types.items %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field"><label>Tools / Equipment to be Used</label><input id="nTools" placeholder="List tools and equipment..."></div>
+        </div>
+        <div class="field-row3">
+          <div class="field"><label>Expected Duration</label><input id="nDuration" placeholder="e.g. 4 hours"></div>
+          <div class="field"><label>No. of Employees</label><input id="nNumEmp" type="number" min="1" placeholder="e.g. 4"></div>
+          <div class="field"><label>SLD / Drawing No.</label><input id="nSld" placeholder="e.g. SLD-001"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Valid From *</label><input type="datetime-local" id="nFrom"></div>
+          <div class="field"><label>Valid Until *</label><input type="datetime-local" id="nUntil"></div>
+        </div>
+        <div class="field">
+          <label>Energy State</label>
+          <div style="display:flex;gap:16px;padding:8px 0">
+            <label class="cb-item"><input type="checkbox" id="nEnergized"> Energized Lines/Equipment</label>
+            <label class="cb-item"><input type="checkbox" id="nDeEnergized" checked> De-Energized Lines/Equipment</label>
+          </div>
+        </div>
+        <div class="field"><label>Workers / Technicians Names</label><input id="nWorkers" placeholder="Names of all workers involved"></div>
+        <div class="field"><label>Company Name</label><input id="nCompany" value="POWERCHINA" placeholder="Company name"></div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: RISKS -->
+    <div class="card">
+      <div class="card-head"><h3>⚠️ Section 2 — Risk Identification</h3></div>
+      <div class="card-body">
+        <div class="cb-grid" id="risksGrid">
+          <label class="cb-item"><input type="checkbox" data-risk="electrocution"> Electrocution</label>
+          <label class="cb-item"><input type="checkbox" data-risk="arc_flash"> Arc Flash</label>
+          <label class="cb-item"><input type="checkbox" data-risk="flying_particles"> Flying Particles</label>
+          <label class="cb-item"><input type="checkbox" data-risk="noise"> Noise</label>
+          <label class="cb-item"><input type="checkbox" data-risk="falling_objects"> Falling Objects</label>
+          <label class="cb-item"><input type="checkbox" data-risk="protruding_objects"> Protruding Objects</label>
+          <label class="cb-item"><input type="checkbox" data-risk="tripping_slipping"> Tripping / Slipping</label>
+          <label class="cb-item"><input type="checkbox" data-risk="electric_shock"> Electric Shock</label>
+          <label class="cb-item"><input type="checkbox" data-risk="fire"> Fire</label>
+          <label class="cb-item"><input type="checkbox" data-risk="manual_handling"> Manual Handling</label>
+          <label class="cb-item"><input type="checkbox" data-risk="electric_burn"> Electric Burn</label>
+          <label class="cb-item"><input type="checkbox" data-risk="near_overhead_lines"> Near Overhead Lines</label>
+        </div>
+        <div class="field" style="margin-top:10px"><label>Other Risk (specify)</label><input id="nOtherRisk" placeholder="Specify other risk..."></div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: PRECAUTIONS -->
+    <div class="card">
+      <div class="card-head"><h3>✅ Section 3 — Precautions</h3></div>
+      <div class="card-body">
+        <table class="prec-table">
+          <thead><tr><th style="width:65%">Precaution Item</th><th>Yes</th><th>No</th><th>N/A</th></tr></thead>
+          <tbody>
+            {% for item in precaution_items %}
+            <tr>
+              <td>{{ item.label }}{% if item.key == 'safe_distance' %}
+                <span style="margin-left:10px">Voltage: <input id="nVoltage" style="width:80px;padding:3px 6px;border-radius:5px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:11px"> Distance: <input id="nDistance" style="width:80px;padding:3px 6px;border-radius:5px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:11px"></span>
+              {% endif %}</td>
+              <td><label class="yn-label"><input type="radio" name="prec_{{ item.key }}" value="Yes" {% if item.default == 'Yes' %}checked{% endif %}> Yes</label></td>
+              <td><label class="yn-label"><input type="radio" name="prec_{{ item.key }}" value="No" {% if item.default == 'No' %}checked{% endif %}> No</label></td>
+              <td><label class="yn-label"><input type="radio" name="prec_{{ item.key }}" value="N/A" {% if item.default == 'N/A' %}checked{% endif %}> N/A</label></td>
+            </tr>
+            {% endfor %}
+            <tr>
+              <td colspan="4">
+                <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+                  <label class="cb-item"><input type="checkbox" id="nIsoSwitch"> Switch Out</label>
+                  <label class="cb-item"><input type="checkbox" id="nIsoLoto"> Lockout/Tagout</label>
+                  <span style="font-size:12px;color:var(--tm)">No. of Locks: <input id="nNumLocks" style="width:60px;padding:3px 6px;border-radius:5px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:11px"></span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="field" style="margin-top:10px"><label>Other Precaution (specify)</label><input id="nOtherPrec" placeholder="Any other precaution..."></div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: INSPECTED AREAS -->
+    <div class="card">
+      <div class="card-head"><h3>🔍 Section 4 — Areas / Items Inspected</h3></div>
+      <div class="card-body">
+        <div class="field-row3" style="margin-bottom:10px">
+          <div class="field"><label>Fire Extinguisher Type</label><input id="nFireType" placeholder="e.g. CO2"></div>
+          <div class="field"><label>Quantity</label><input id="nFireQty" placeholder="e.g. 2"></div>
+          <div class="field"><label>Size</label><input id="nFireSize" placeholder="e.g. 6kg"></div>
+        </div>
+        <div class="cb-grid">
+          <label class="cb-item"><input type="checkbox" data-insp="access_escape"> Access/Escape Route</label>
+          <label class="cb-item"><input type="checkbox" data-insp="danger_sign"> Danger/Warning Sign</label>
+          <label class="cb-item"><input type="checkbox" data-insp="lighting"> Lighting</label>
+          <label class="cb-item"><input type="checkbox" data-insp="safety_barriers"> Safety Barriers</label>
+          <label class="cb-item"><input type="checkbox" data-insp="stick"> Stick</label>
+          <label class="cb-item"><input type="checkbox" data-insp="portable_radio"> Portable Radio</label>
+        </div>
+        <div class="field" style="margin-top:10px"><label>Other (specify)</label><input id="nOtherArea" placeholder="Any other area/item..."></div>
+      </div>
+    </div>
+
+    <!-- SECTION 5: PPE -->
+    <div class="card">
+      <div class="card-head"><h3>🦺 Section 5 — PPE Required</h3></div>
+      <div class="card-body">
+        <div class="cb-grid">
+          <label class="cb-item"><input type="checkbox" data-ppe="helmet"> Helmet</label>
+          <label class="cb-item"><input type="checkbox" data-ppe="safety_shoes"> Safety Shoes</label>
+          <label class="cb-item"><input type="checkbox" data-ppe="elec_gloves"> Electrical Gloves</label>
+          <label class="cb-item"><input type="checkbox" data-ppe="half_mask"> Half Mask</label>
+          <label class="cb-item"><input type="checkbox" data-ppe="safety_goggles"> Safety Goggles</label>
+          <label class="cb-item"><input type="checkbox" data-ppe="reflective_vest"> Reflective Vest</label>
+          <label class="cb-item"><input type="checkbox" data-ppe="dust_mask"> Dust Mask</label>
+          <label class="cb-item"><input type="checkbox" data-ppe="safety_clothes"> Safety Clothes</label>
+          <label class="cb-item"><input type="checkbox" data-ppe="face_shield"> Face Shield</label>
+          <label class="cb-item"><input type="checkbox" data-ppe="arc_flash_ppe"> Arc Flash PPE</label>
+          <label class="cb-item"><input type="checkbox" data-ppe="ear_plugs"> Safety Ear Plugs/Muffs</label>
+        </div>
+        <div class="field-row" style="margin-top:10px">
+          <div class="field"><label>Gloves Rating</label><input id="nGlovesRating" placeholder="e.g. Class 2, 17kV"></div>
+          <div class="field"><label>Other PPE (specify)</label><input id="nOtherPpe" placeholder="Other PPE..."></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 6: ISOLATION -->
+    <div class="card">
+      <div class="card-head"><h3>🔒 Section 6 — Isolation</h3></div>
+      <div class="card-body">
+        <div class="field">
+          <label>Isolation Required?</label>
+          <select id="nIsoReq" onchange="toggleIsoFields(this.value)">
+            <option value="no">No — Not required</option>
+            <option value="yes">Yes — Isolation required</option>
+          </select>
+        </div>
+        <div id="isoFields" style="display:none">
+          <div class="field"><label>Isolation Details</label><textarea id="nIsoDet" rows="2" placeholder="Describe isolation method and sequence..."></textarea></div>
+          <div class="field">
+            <label>Isolation Type</label>
+            <div style="display:flex;gap:16px;padding:6px 0;flex-wrap:wrap">
+              <label class="cb-item"><input type="checkbox" id="isoElec"> Electrical Isolation</label>
+              <label class="cb-item"><input type="checkbox" id="isoMech"> Mechanical Isolation</label>
+              <label class="cb-item"><input type="checkbox" id="isoEarth"> Earthing</label>
+              <input id="isoOthers" placeholder="Others (specify)" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px;width:180px">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 7: HAZARDS & ADDITIONAL PRECAUTIONS -->
+    <div class="card">
+      <div class="card-head"><h3>📝 Section 7 — Hazards &amp; Additional Precautions</h3></div>
+      <div class="card-body">
+        <div class="field"><label>Hazards Identified</label><textarea id="nHazards" rows="2" placeholder="List all hazards..."></textarea></div>
+        <div class="field"><label>General Precautions</label><textarea id="nPrecautions" rows="2" placeholder="General safety precautions..."></textarea></div>
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tm);margin-bottom:8px">Additional Precaution Measures</div>
+        {% for i in "12345" %}
+        <div class="field"><label>{{ forloop.counter }}.</label><input id="nAddPrec{{ forloop.counter }}" placeholder="Additional precaution {{ forloop.counter }}..."></div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- SECTION 8: WORKERS LIST -->
+    <div class="card">
+      <div class="card-head">
+        <h3>👷 Section 8 — Workers Sign-in List</h3>
+        <button class="btn btn-ghost btn-sm" onclick="addWorkerRow()">+ Add</button>
+      </div>
+      <div class="card-body">
+        <p style="font-size:12px;color:var(--tm);margin-bottom:10px">Add workers who will perform this task (name and Iqama number).</p>
+        <div style="overflow-x:auto">
+          <table class="workers-table">
+            <thead><tr><th>#</th><th>Name</th><th>Iqama Number</th><th></th></tr></thead>
+            <tbody id="workersBody">
+              <tr><td style="font-size:12px;text-align:center">1</td>
+                <td><input placeholder="Worker name"></td>
+                <td><input placeholder="Iqama / ID number"></td>
+                <td><button onclick="removeRow(this)" class="btn btn-danger btn-sm" style="padding:3px 8px">✕</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 9: RECEIVER SIGNATURE -->
+    <div class="card">
+      <div class="card-head"><h3>✍️ Section 9 — Permit Receiver Signature</h3></div>
+      <div class="card-body">
+        <p style="font-size:12px;color:var(--tm);margin-bottom:10px">
+          I certify that I have read and verified this work permit. I am aware of all risks and commit to following all safety rules.
+        </p>
+        <canvas class="sig-canvas" id="receiverSig" style="height:130px"></canvas>
+        <div class="sig-actions"><button class="btn btn-ghost btn-sm" onclick="clearSig('receiverSig')">Clear</button></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+      <a href="/cmms/permits/" class="btn btn-ghost">Cancel</a>
+      <button class="btn btn-primary" onclick="submitPermit()">
+        <span id="submitSpinner" class="spinner"></span>📤 Submit Permit Application
+      </button>
+    </div>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:60px 20px;color:var(--td)">
+    <div style="font-size:48px;margin-bottom:12px">🚫</div>
+    <p style="font-size:14px">Only Maintenance Engineers can apply for permits.</p>
+    <a href="/cmms/permits/" class="btn btn-ghost" style="margin-top:16px;display:inline-flex">← Back</a>
+  </div>
+  {% endif %}
+  {% endif %}
+  </main>
+</div>
+
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');let W,H;
+const dots=Array.from({length:28},()=>({x:Math.random()*2000,y:Math.random()*1200,dx:(Math.random()-.5)*.18,dy:(Math.random()-.5)*.18,r:Math.random()*1.1+.3,a:Math.random()*.17+.04}));
+function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight}rs();addEventListener('resize',rs);
+function draw(){ctx.clearRect(0,0,W,H);dots.forEach(d=>{d.x=(d.x+d.dx+W)%W;d.y=(d.y+d.dy+H)%H;ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,Math.PI*2);ctx.fillStyle=`rgba(59,158,255,${d.a})`;ctx.fill()});requestAnimationFrame(draw)}
+draw();
+
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1]||'';
+const PERMIT_ID = '{{ permit.id|default:"" }}';
+
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type}`;t.style.display='block';
+  setTimeout(()=>{t.style.display='none'},3500);
+}
+
+// ── SIGNATURE PADS ────────────────────────────────────────────────────────
+const sigPads = {};
+function initSig(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.width = el.offsetWidth || 600;
+  el.height = el.offsetHeight || 120;
+  const c = el.getContext('2d');
+  c.strokeStyle='#3b9eff'; c.lineWidth=2; c.lineCap='round'; c.lineJoin='round';
+  let drawing = false;
+  function pos(e){
+    const r=el.getBoundingClientRect();
+    const sx=el.width/r.width,sy=el.height/r.height;
+    if(e.touches) return {x:(e.touches[0].clientX-r.left)*sx,y:(e.touches[0].clientY-r.top)*sy};
+    return {x:(e.clientX-r.left)*sx,y:(e.clientY-r.top)*sy};
+  }
+  el.addEventListener('mousedown',e=>{drawing=true;const p=pos(e);c.beginPath();c.moveTo(p.x,p.y)});
+  el.addEventListener('mousemove',e=>{if(!drawing)return;const p=pos(e);c.lineTo(p.x,p.y);c.stroke()});
+  el.addEventListener('mouseup',()=>drawing=false);
+  el.addEventListener('mouseleave',()=>drawing=false);
+  el.addEventListener('touchstart',e=>{e.preventDefault();drawing=true;const p=pos(e);c.beginPath();c.moveTo(p.x,p.y)},{passive:false});
+  el.addEventListener('touchmove',e=>{e.preventDefault();if(!drawing)return;const p=pos(e);c.lineTo(p.x,p.y);c.stroke()},{passive:false});
+  el.addEventListener('touchend',()=>drawing=false);
+  sigPads[id]={el,ctx:c};
+}
+function clearSig(id){const p=sigPads[id];if(p)p.ctx.clearRect(0,0,p.el.width,p.el.height);}
+function getSig(id){const p=sigPads[id];return p?p.el.toDataURL('image/png'):null;}
+window.addEventListener('load',()=>{['receiverSig','issuerSig','hseSig'].forEach(id=>initSig(id))});
+
+// ── TOGGLE ISOLATION FIELDS ────────────────────────────────────────────────
+function toggleIsoFields(val){
+  const el=document.getElementById('isoFields');
+  if(el) el.style.display=val==='yes'?'block':'none';
+}
+
+// ── WORKERS TABLE ──────────────────────────────────────────────────────────
+let workerCount=1;
+function addWorkerRow(){
+  workerCount++;
+  const tbody=document.getElementById('workersBody');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td style="font-size:12px;text-align:center">${workerCount}</td>
+    <td><input placeholder="Worker name"></td>
+    <td><input placeholder="Iqama / ID number"></td>
+    <td><button onclick="removeRow(this)" class="btn btn-danger btn-sm" style="padding:3px 8px">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+function removeRow(btn){btn.closest('tr').remove();}
+function getWorkersList(){
+  return [...document.querySelectorAll('#workersBody tr')].map(tr=>{
+    const ins=[...tr.querySelectorAll('input')];
+    return {name:ins[0]?.value.trim()||'', iqama:ins[1]?.value.trim()||''};
+  }).filter(w=>w.name||w.iqama);
+}
+
+// ── AUTO-FILL DUTY STAFF ───────────────────────────────────────────────────
+async function autofillFromSchedule(){
+  const from = document.getElementById('nFrom')?.value;
+  const date = from ? from.slice(0,10) : new Date().toISOString().slice(0,10);
+  const r = await fetch(`/api/cmms/duty-staff/?date=${date}`);
+  const d = await r.json();
+  if(d.ok && d.engineers.length){
+    const names = d.engineers.map(e=>e.name).join(', ');
+    if(!document.getElementById('nWorkers').value)
+      document.getElementById('nWorkers').value = names;
+    // Fill workers table
+    const tbody = document.getElementById('workersBody');
+    tbody.innerHTML='';
+    workerCount=0;
+    const all = [...d.engineers, ...d.technicians];
+    all.forEach((p,i)=>{
+      workerCount++;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td style="font-size:12px;text-align:center">${i+1}</td>
+        <td><input value="${p.name}" placeholder="Worker name"></td>
+        <td><input placeholder="Iqama / ID number"></td>
+        <td><button onclick="removeRow(this)" class="btn btn-danger btn-sm" style="padding:3px 8px">✕</button></td>`;
+      tbody.appendChild(tr);
+    });
+    showToast(`✓ Loaded ${d.engineers.length} engineers + ${d.technicians.length} technicians on duty`);
+  } else {
+    showToast('No duty staff found for this date','error');
+  }
+}
+
+// listen for date change to auto-fill
+document.getElementById('nFrom')?.addEventListener('change', ()=>autofillFromSchedule());
+
+// ── COLLECT FORM DATA ──────────────────────────────────────────────────────
+function collectRisks(){
+  const r={};
+  document.querySelectorAll('[data-risk]').forEach(cb=>{r[cb.dataset.risk]=cb.checked;});
+  r.other_risk = document.getElementById('nOtherRisk')?.value.trim()||'';
+  return r;
+}
+function collectInspected(){
+  const r={};
+  document.querySelectorAll('[data-insp]').forEach(cb=>{r[cb.dataset.insp]=cb.checked;});
+  r.fire_ext_type=document.getElementById('nFireType')?.value.trim()||'';
+  r.fire_ext_qty=document.getElementById('nFireQty')?.value.trim()||'';
+  r.fire_ext_size=document.getElementById('nFireSize')?.value.trim()||'';
+  r.other_area=document.getElementById('nOtherArea')?.value.trim()||'';
+  return r;
+}
+function collectPpe(){
+  const r={};
+  document.querySelectorAll('[data-ppe]').forEach(cb=>{r[cb.dataset.ppe]=cb.checked;});
+  r.elec_gloves_rating=document.getElementById('nGlovesRating')?.value.trim()||'';
+  r.other_ppe=document.getElementById('nOtherPpe')?.value.trim()||'';
+  return r;
+}
+function collectPrecs(){
+  const keys=['safe_distance','loto_required','confined_space','power_isolated','lines_de_energized','tools_tested'];
+  const r={};
+  keys.forEach(k=>{
+    const sel=document.querySelector(`input[name="prec_${k}"]:checked`);
+    r[k]=sel?sel.value:'N/A';
+  });
+  r.safe_distance_voltage=document.getElementById('nVoltage')?.value||'';
+  r.safe_distance_dist=document.getElementById('nDistance')?.value||'';
+  r.isolation_type_switch=document.getElementById('nIsoSwitch')?.checked||false;
+  r.isolation_type_loto=document.getElementById('nIsoLoto')?.checked||false;
+  r.num_locks=document.getElementById('nNumLocks')?.value||'';
+  r.other_precaution=document.getElementById('nOtherPrec')?.value.trim()||'';
+  return r;
+}
+
+// ── NEW PERMIT SUBMIT ──────────────────────────────────────────────────────
+async function submitPermit(){
+  const desc=document.getElementById('nDesc')?.value.trim();
+  const equip=document.getElementById('nEquip')?.value.trim();
+  const loc=document.getElementById('nLoc')?.value.trim();
+  const from=document.getElementById('nFrom')?.value;
+  const until=document.getElementById('nUntil')?.value;
+  if(!desc||!equip||!loc||!from||!until){showToast('Please fill required fields (*)','error');return}
+  if(new Date(from)>=new Date(until)){showToast('Valid Until must be after Valid From','error');return}
+
+  const isoReq=document.getElementById('nIsoReq')?.value==='yes';
+  document.getElementById('submitSpinner').style.display='block';
+
+  const addPrecs=[];
+  for(let i=1;i<=5;i++) addPrecs.push(document.getElementById(`nAddPrec${i}`)?.value.trim()||'');
+
+  const payload={
+    action:'create',
+    job_description:desc, equipment:equip, location:loc,
+    work_type:document.getElementById('nType').value,
+    tools_equipment:document.getElementById('nTools')?.value.trim()||'',
+    expected_duration:document.getElementById('nDuration')?.value.trim()||'',
+    num_employees:document.getElementById('nNumEmp')?.value.trim()||'',
+    sld_drawing_no:document.getElementById('nSld')?.value.trim()||'',
+    receiver_company:document.getElementById('nCompany')?.value.trim()||'POWERCHINA',
+    energized_lines:document.getElementById('nEnergized')?.checked||false,
+    de_energized_lines:document.getElementById('nDeEnergized')?.checked||true,
+    valid_from:from, valid_until:until,
+    workers:document.getElementById('nWorkers')?.value.trim()||'',
+    workers_list:getWorkersList(),
+    hazards:document.getElementById('nHazards')?.value.trim()||'',
+    precautions:document.getElementById('nPrecautions')?.value.trim()||'',
+    additional_precautions:addPrecs,
+    risks:collectRisks(), precaution_checks:collectPrecs(),
+    inspected_areas:collectInspected(), ppe_required:collectPpe(),
+    isolation_required:isoReq,
+    isolation_details:document.getElementById('nIsoDet')?.value.trim()||'',
+    isolation_type:{
+      electrical:document.getElementById('isoElec')?.checked||false,
+      mechanical:document.getElementById('isoMech')?.checked||false,
+      earthing:document.getElementById('isoEarth')?.checked||false,
+      others:document.getElementById('isoOthers')?.value.trim()||'',
+    },
+    receiver_signature:getSig('receiverSig'),
+  };
+
+  const r=await fetch('/api/cmms/permits/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify(payload)});
+  const d=await r.json();
+  document.getElementById('submitSpinner').style.display='none';
+  if(d.ok){
+    showToast('✓ Permit submitted! Operation engineers notified by email.');
+    setTimeout(()=>window.location.href='/cmms/permits/'+d.permit_id+'/',1200);
+  } else {
+    showToast(d.error||'Submission failed','error');
+  }
+}
+
+// ── ISSUE PERMIT ──────────────────────────────────────────────────────────
+async function issuePermit(){
+  const sig=getSig('issuerSig');
+  document.getElementById('issueSpinner').style.display='block';
+  const r=await fetch('/api/cmms/permits/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body:JSON.stringify({action:'issue',permit_id:PERMIT_ID,issuer_signature:sig})});
+  const d=await r.json();
+  document.getElementById('issueSpinner').style.display='none';
+  if(d.ok){showToast('✓ Permit issued! HSE officers notified.');setTimeout(()=>location.reload(),1200);}
+  else showToast(d.error||'Failed','error');
+}
+
+// ── HSE SIGN ──────────────────────────────────────────────────────────────
+async function hseSignOff(){
+  const pnum=document.getElementById('hsePermitNum')?.value.trim();
+  if(!pnum){showToast('Permit number is required','error');return}
+  const isoNum=document.getElementById('hseIsoNum')?.value.trim()||null;
+  const sig=getSig('hseSig');
+  document.getElementById('hseSpinner').style.display='block';
+  const r=await fetch('/api/cmms/permits/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body:JSON.stringify({action:'hse_sign',permit_id:PERMIT_ID,permit_number:pnum,isolation_cert_number:isoNum,hse_signature:sig})});
+  const d=await r.json();
+  document.getElementById('hseSpinner').style.display='none';
+  if(d.ok){showToast('✓ Permit approved! All duty engineers notified.');setTimeout(()=>location.reload(),1200);}
+  else showToast(d.error||'Failed','error');
+}
+
+// ── CLOSE / CANCEL ────────────────────────────────────────────────────────
+async function closePermit(){
+  if(!confirm('Close this permit? Work must be complete.')) return;
+  const r=await fetch('/api/cmms/permits/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body:JSON.stringify({action:'close',permit_id:PERMIT_ID})});
+  const d=await r.json();
+  if(d.ok){showToast('✓ Permit closed');setTimeout(()=>location.reload(),1000);}
+  else showToast(d.error||'Failed','error');
+}
+async function cancelPermit(){
+  if(!confirm('Reject and cancel this permit?')) return;
+  const r=await fetch('/api/cmms/permits/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body:JSON.stringify({action:'cancel',permit_id:PERMIT_ID})});
+  const d=await r.json();
+  if(d.ok){showToast('Cancelled');setTimeout(()=>window.location.href='/cmms/permits/',1000);}
+  else showToast(d.error||'Failed','error');
+}
+
+// Auto-fill schedule on page load if date already set
+document.addEventListener('DOMContentLoaded', ()=>{
+  const fromEl=document.getElementById('nFrom');
+  if(fromEl && !fromEl.value){
+    // Default to now
+    const now=new Date();
+    now.setMinutes(0,0,0);
+    fromEl.value=now.toISOString().slice(0,16);
+    const until=new Date(now.getTime()+8*3600000);
+    document.getElementById('nUntil').value=until.toISOString().slice(0,16);
+    autofillFromSchedule();
+  }
+});
+</script>
+</body>
+</html>
