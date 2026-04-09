@@ -721,11 +721,12 @@ def generate_activity_month_zip(activity_id: str) -> io.BytesIO | None:
 
 # ── PERMITS ───────────────────────────────────────────────────────────────
 PERMIT_STATUSES = {
-    'pending_issue': 'Pending Issuance',
-    'pending_hse':   'Pending HSE Sign-off',
-    'active':        'Active / Approved',
-    'closed':        'Closed',
-    'cancelled':     'Cancelled',
+    'pending_issue':    'Pending Issuance',
+    'pending_hse':      'Pending HSE Sign-off',
+    'active':           'Active / Approved',
+    'waiting_for_close': 'Waiting for Close',
+    'closed':           'Closed',
+    'cancelled':        'Cancelled',
 }
 
 WORK_TYPES = {
@@ -848,10 +849,21 @@ def create_permit(data: dict) -> dict:
             'tools_removed': False, 'loto_closed': False,
             'permit_suspended': False, 'housekeeping_done': False,
         }),
-        # Signatures
+        # Signatures — Work Started section
         'receiver_signature':    data.get('receiver_signature'),
         'issuer_signature':      None,
         'hse_signature':         None,
+        # Signatures — Closure section (collected when closing permit)
+        'closure_receiver_signature': None,
+        'closure_issuer_signature':   None,
+        'closure_hse_signature':      None,
+        # Who closed the permit
+        'closed_by':             None,
+        'closed_by_name':        None,
+        # Activity images (uploaded at close step)
+        'activity_images':       [],
+        # Application date/time (editable by submitter)
+        'application_datetime':  data.get('application_datetime', datetime.now().isoformat()),
         # Timestamps
         'created_at':            datetime.now().isoformat(),
         'issued_at':             None,
@@ -1739,35 +1751,145 @@ def generate_icc_pdf(permit_id: str) -> io.BytesIO | None:
 
 
 # ── WORD (.docx) PERMIT EXPORT ────────────────────────────────────────────
-def _fill_sig_cell(cell, name: str = '', iqama: str = '', date: str = ''):
+
+def _b64_to_stream(data_url: str):
+    """Convert a base64 data URL (data:image/...;base64,...) to a BytesIO stream."""
+    import base64 as _b64
+    if not data_url:
+        return None
+    try:
+        header, data = data_url.split(',', 1)
+        return io.BytesIO(_b64.b64decode(data))
+    except Exception:
+        return None
+
+
+def _add_sig_image_to_para(para, sig_b64: str, max_w_cm: float, max_h_cm: float):
     """
-    Fill a signature cell (Table 7 rows) that contains multi-paragraph text like:
-    'Acceptance of Work Permission...\nName: __\nDate: __'
-    Injects the actual values into the relevant paragraphs.
+    Add a signature image run to *para*, scaled so it fits within
+    max_w_cm × max_h_cm while preserving the image aspect ratio.
+    Uses PIL to read the real pixel dimensions.
     """
+    stream = _b64_to_stream(sig_b64)
+    if not stream:
+        return
+    try:
+        from PIL import Image as _PilImg
+        from docx.shared import Cm
+        stream.seek(0)
+        img = _PilImg.open(stream)
+        img_w, img_h = img.size
+        aspect = (img_h / img_w) if img_w > 0 else 1.0
+
+        # Fit to max width first, then clamp to max height
+        final_w = max_w_cm
+        final_h = final_w * aspect
+        if final_h > max_h_cm:
+            final_h = max_h_cm
+            final_w = final_h / aspect if aspect > 0 else final_w
+
+        stream.seek(0)
+        run = para.add_run()
+        run.add_picture(stream, width=Cm(final_w), height=Cm(final_h))
+    except Exception:
+        pass
+
+
+def _set_para_text(para, text: str, bold: bool = False, font_size_pt: float = 9):
+    """Replace all runs in *para* with a single run containing *text*."""
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
+    from docx.shared import Pt
+    for r_el in list(para._p.findall(qn('w:r'))):
+        para._p.remove(r_el)
+    r_new = OxmlElement('w:r')
+    rpr = OxmlElement('w:rPr')
+    if bold:
+        b_el = OxmlElement('w:b')
+        rpr.append(b_el)
+    sz = OxmlElement('w:sz')
+    sz.set(qn('w:val'), str(int(font_size_pt * 2)))
+    rpr.append(sz)
+    r_new.append(rpr)
+    t_new = OxmlElement('w:t')
+    t_new.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
+    t_new.text = text or ''
+    r_new.append(t_new)
+    para._p.append(r_new)
 
-    for para in cell.paragraphs:
-        txt = para.text.strip()
-        if txt.lower().startswith('name:'):
-            for r_el in list(para._p.findall(qn('w:r'))):
-                para._p.remove(r_el)
-            r_new = OxmlElement('w:r')
-            t_new = OxmlElement('w:t')
-            t_new.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
-            t_new.text = 'Name: ' + (name or '') + ('   Iqama: ' + (iqama or '') if iqama else '')
-            r_new.append(t_new)
-            para._p.append(r_new)
-        elif 'date:' in txt.lower():
-            for r_el in list(para._p.findall(qn('w:r'))):
-                para._p.remove(r_el)
-            r_new = OxmlElement('w:r')
-            t_new = OxmlElement('w:t')
-            t_new.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
-            t_new.text = 'Date: ' + date
-            r_new.append(t_new)
-            para._p.append(r_new)
+
+def _fill_t7_sig_cell(cell, role_label: str, name: str, date_str: str, sig_b64: str):
+    """
+    Fill a Table-7 (Issue & Acceptance / Work-Started) signature cell.
+
+    Template structure inside each cell:
+      Para[0] — role title (keep as-is)
+      Para[1] — declaration text (keep as-is)
+      Para[2] — "Permit Receiver Name: ...  Signature  ...  Date:" — REPLACE
+
+    After Para[2] we insert:
+      • a paragraph with the e-signature image (max 5.5 cm × 1.8 cm)
+      • a paragraph with "Date: <date_str>"
+    """
+    paras = cell.paragraphs
+    # Rewrite Para[2]: show "Permit Receiver Name: [name]  |  Approved by: [name]"
+    if len(paras) > 2:
+        _set_para_text(paras[2], f'{role_label}Name: {name or ""}', font_size_pt=9)
+
+    # Append signature image
+    if sig_b64:
+        sig_para = cell.add_paragraph()
+        _add_sig_image_to_para(sig_para, sig_b64, max_w_cm=5.5, max_h_cm=1.8)
+
+    # Append date
+    date_para = cell.add_paragraph()
+    _set_para_text(date_para, f'Date: {date_str or ""}', font_size_pt=9)
+
+
+def _fill_t10_name_cell(cell, name: str, date: str = None):
+    """
+    Fill a closure table Name cell (Table 10, rows 3/5, cols 0/3/0).
+    Replaces the template 'Name:' text with the actual name.
+    Optionally sets date if *date* is given (for single-cell layouts).
+    """
+    if cell.paragraphs:
+        _set_para_text(cell.paragraphs[0], f'Name: {name or ""}', font_size_pt=9)
+    if date and len(cell.paragraphs) > 1:
+        _set_para_text(cell.paragraphs[1], f'Date: {date or ""}', font_size_pt=9)
+
+
+def _fill_t10_date_cell(cell, date_str: str):
+    """Fill a closure table Date cell (Table 10, rows 3/5, cols 2/5/2)."""
+    if cell.paragraphs:
+        _set_para_text(cell.paragraphs[0], f'Date: {date_str or ""}', font_size_pt=9)
+
+
+def _fill_t10_sig_cell(cell, sig_b64: str, cell_width_cm: float):
+    """
+    Fill a closure table Signature cell (Table 10, rows 3/5, cols 1/4/1).
+    Clears the 'Signature:' label and inserts the image, fitted to the cell.
+    Keeps a small margin: max_w = cell_width - 0.3 cm, max_h = 1.8 cm.
+    """
+    if cell.paragraphs:
+        _set_para_text(cell.paragraphs[0], '', font_size_pt=9)
+    if sig_b64:
+        max_w = max(cell_width_cm - 0.3, 0.5)
+        sig_para = cell.add_paragraph()
+        _add_sig_image_to_para(sig_para, sig_b64, max_w_cm=max_w, max_h_cm=1.8)
+
+
+# Keep for backwards-compat (used elsewhere in the file)
+def _insert_sig_image_in_cell(cell, sig_b64: str, width_cm: float = 3.5):
+    stream = _b64_to_stream(sig_b64)
+    if not stream:
+        return
+    try:
+        from docx.shared import Cm
+        para = cell.add_paragraph()
+        run = para.add_run()
+        run.add_picture(stream, width=Cm(width_cm))
+    except Exception:
+        pass
 
 
 def generate_permit_docx(permit_id: str) -> io.BytesIO:
@@ -1998,20 +2120,32 @@ def generate_permit_docx(permit_id: str) -> io.BytesIO:
             )
             mark_checkbox_cell(cell, any_checked)
 
-    # ── TABLE 7: Issue & Acceptance Signatures ─────────────────────────────
+    # ── TABLE 7: Issue & Acceptance Signatures (Work Started) ─────────────────
+    # Each row is a single wide cell (6.62 in) with 3 paragraphs:
+    #   Para[0] = role title,  Para[1] = declaration,  Para[2] = Name/Sig/Date line
+    # We rewrite Para[2] with the actual name, then append: image + date.
     t7 = doc.tables[7]
-    _fill_sig_cell(t7.rows[1].cells[0],
-                   name=p.get('receiver_name', ''),
-                   iqama=p.get('receiver_iqama', ''),
-                   date=p.get('created_at', '')[:10])
-    _fill_sig_cell(t7.rows[2].cells[0],
-                   name=p.get('issuer_name', ''),
-                   iqama=p.get('issuer_iqama', ''),
-                   date=(p.get('issued_at', '') or '')[:10])
-    _fill_sig_cell(t7.rows[3].cells[0],
-                   name=p.get('hse_name', ''),
-                   iqama=p.get('hse_iqama', ''),
-                   date=(p.get('hse_signed_at', '') or '')[:10])
+    _fill_t7_sig_cell(
+        t7.rows[1].cells[0],
+        role_label='Permit Receiver ',
+        name=p.get('receiver_name', ''),
+        date_str=(p.get('application_datetime') or p.get('created_at', ''))[:10],
+        sig_b64=p.get('receiver_signature'),
+    )
+    _fill_t7_sig_cell(
+        t7.rows[2].cells[0],
+        role_label='Permit Issuer ',
+        name=p.get('issuer_name', ''),
+        date_str=(p.get('issued_at', '') or '')[:10],
+        sig_b64=p.get('issuer_signature'),
+    )
+    _fill_t7_sig_cell(
+        t7.rows[3].cells[0],
+        role_label='HSE Practitioner ',
+        name=p.get('hse_name', ''),
+        date_str=(p.get('hse_signed_at', '') or '')[:10],
+        sig_b64=p.get('hse_signature'),
+    )
 
     # ── TABLE 9: Workers ───────────────────────────────────────────────────
     t9 = doc.tables[9]
@@ -2024,18 +2158,33 @@ def generate_permit_docx(permit_id: str) -> io.BytesIO:
         set_cell_text(row.cells[5], worker.get('name', ''))
         set_cell_text(row.cells[6], worker.get('iqama', ''))
 
-    # ── TABLE 10: Closure ──────────────────────────────────────────────────
+    # ── TABLE 10: Closure Signatures ──────────────────────────────────────
+    # Row 3 layout (6 cells):
+    #   [0] Name:  [1] Signature:  [2] Date:  |  [3] Name:  [4] Signature:  [5] Date:
+    #      Permit Receiver                           Permit Issuer
+    # Row 5 layout (6 cells):
+    #   [0] Name:  [1] Signature:  [2] Date:
+    #      HSE Practitioner
     t10 = doc.tables[10]
-    if len(t10.rows) > 3:
-        if len(t10.rows[3].cells) >= 3:
-            set_cell_text(t10.rows[3].cells[0], p.get('receiver_name', ''))
-            set_cell_text(t10.rows[3].cells[2], closure.get('receiver_date', ''))
-        if len(t10.rows[3].cells) >= 6:
-            set_cell_text(t10.rows[3].cells[3], p.get('issuer_name', ''))
-            set_cell_text(t10.rows[3].cells[5], closure.get('issuer_date', ''))
+    closed_at = (p.get('closed_at', '') or '')[:10]
+
+    if len(t10.rows) > 3 and len(t10.rows[3].cells) >= 6:
+        r3 = t10.rows[3].cells
+        # Permit Receiver
+        _fill_t10_name_cell(r3[0], name=p.get('receiver_name', ''))
+        _fill_t10_sig_cell(r3[1], sig_b64=p.get('closure_receiver_signature'), cell_width_cm=3.04)
+        _fill_t10_date_cell(r3[2], date_str=closed_at)
+        # Permit Issuer
+        _fill_t10_name_cell(r3[3], name=p.get('issuer_name', ''))
+        _fill_t10_sig_cell(r3[4], sig_b64=p.get('closure_issuer_signature'), cell_width_cm=2.59)
+        _fill_t10_date_cell(r3[5], date_str=closed_at)
+
     if len(t10.rows) > 5 and len(t10.rows[5].cells) >= 3:
-        set_cell_text(t10.rows[5].cells[0], p.get('hse_name', ''))
-        set_cell_text(t10.rows[5].cells[2], closure.get('hse_date', ''))
+        r5 = t10.rows[5].cells
+        # HSE Practitioner
+        _fill_t10_name_cell(r5[0], name=p.get('hse_name', ''))
+        _fill_t10_sig_cell(r5[1], sig_b64=p.get('closure_hse_signature'), cell_width_cm=3.04)
+        _fill_t10_date_cell(r5[2], date_str=closed_at)
 
     # ── Return as bytes ────────────────────────────────────────────────────
     buffer = io.BytesIO()

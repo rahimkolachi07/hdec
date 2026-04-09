@@ -97,7 +97,7 @@ def cmms_hub(request):
     today_tasks = get_today_tasks_for_dashboard(today)
 
     completed_records  = [r for r in records if r.get('completed')]
-    active_permits     = [p for p in permits if p.get('status') == 'active']
+    active_permits     = [p for p in permits if p.get('status') in ('active', 'waiting_for_close')]
     pending_permits    = [p for p in permits if p.get('status') in ('pending_issue', 'pending_hse')]
 
     # Counts for stat cards
@@ -492,14 +492,33 @@ def cmms_permit_detail(request, permit_id=None):
         'mechanical': 'Mechanical Work', 'civil': 'Civil Work', 'at_height': 'Work at Height',
     }
 
+    precaution_items = [
+        {'key': 'safe_distance',     'label': 'Safe Working Distance',          'default': 'N/A'},
+        {'key': 'loto_required',     'label': 'LOTO / Isolation Required',       'default': 'No'},
+        {'key': 'confined_space',    'label': 'Confined Space Entry',            'default': 'No'},
+        {'key': 'power_isolated',    'label': 'Power Isolated',                  'default': 'Yes'},
+        {'key': 'lines_de_energized','label': 'Lines / Equipment De-Energized',  'default': 'Yes'},
+        {'key': 'tools_tested',      'label': 'Tools / Instruments Tested',      'default': 'Yes'},
+    ]
+
+    sig_triples = []
+    if permit:
+        sig_triples = [
+            ('Receiver',    permit.get('receiver_name'), permit.get('receiver_signature'), permit.get('created_at')),
+            ('Issuer',      permit.get('issuer_name'),   permit.get('issuer_signature'),   permit.get('issued_at')),
+            ('HSE Officer', permit.get('hse_name'),      permit.get('hse_signature'),      permit.get('hse_signed_at')),
+        ]
+
     ctx = _ctx(request, {
         'permit': permit,
         'work_types': work_types,
         'permit_statuses': PERMIT_STATUSES,
         'role': role,
-        'can_issue': role in ('operation_engineer', 'admin'),
-        'can_hse_sign': role in ('hse_engineer', 'admin'),
-        'can_close': role in ('operation_engineer', 'admin', 'hse_engineer'),
+        'can_issue':     role in ('operation_engineer', 'admin'),
+        'can_hse_sign':  role in ('hse_engineer', 'admin'),
+        'can_close':     role in ('operation_engineer', 'admin', 'hse_engineer'),
+        'precaution_items': precaution_items,
+        'sig_triples':      sig_triples,
     })
     return render(request, 'core/cmms_permit_detail.html', ctx)
 
@@ -553,6 +572,7 @@ def cmms_permit_api(request):
                 'isolation_sequence':     data.get('isolation_sequence', []),
                 'valid_from':             data.get('valid_from', ''),
                 'valid_until':            data.get('valid_until', ''),
+                'application_datetime':   data.get('application_datetime', ''),
                 'workers':                data.get('workers', ''),
                 'workers_list':           data.get('workers_list', []),
                 'receiver_signature':     data.get('receiver_signature'),
@@ -601,7 +621,7 @@ def cmms_permit_api(request):
                 get_next_isolation_number() if permit.get('isolation_required') else None
             )
             updates = {
-                'status':                'active',
+                'status':                'waiting_for_close',
                 'permit_number':         permit_number,
                 'isolation_cert_number': isolation_number,
                 'hse_officer':           user['username'],
@@ -623,10 +643,46 @@ def cmms_permit_api(request):
             permit = get_permit(data.get('permit_id', ''))
             if not permit:
                 return JsonResponse({'error': 'Permit not found'}, status=404)
-            updated = update_permit(permit['id'], {
-                'status': 'closed',
-                'closed_at': datetime.now().isoformat(),
-            })
+            if permit['status'] not in ('active', 'waiting_for_close'):
+                return JsonResponse({'error': 'Permit is not in a closeable state'}, status=400)
+
+            # For waiting_for_close permits, require all uploads
+            if permit['status'] == 'waiting_for_close':
+                activity_images = data.get('activity_images', [])
+                if not activity_images:
+                    return JsonResponse({'error': 'Activity images are required before closing'}, status=400)
+                # Work Started signatures must exist from earlier workflow steps
+                if not permit.get('receiver_signature'):
+                    return JsonResponse({'error': 'Receiver work-started signature is missing'}, status=400)
+                if not permit.get('issuer_signature'):
+                    return JsonResponse({'error': 'Issuer work-started signature is missing'}, status=400)
+                if not permit.get('hse_signature'):
+                    return JsonResponse({'error': 'HSE work-started signature is missing'}, status=400)
+                # Closure signatures must be uploaded now
+                closure_rcv = data.get('closure_receiver_signature')
+                closure_iss = data.get('closure_issuer_signature')
+                closure_hse = data.get('closure_hse_signature')
+                if not closure_rcv:
+                    return JsonResponse({'error': 'Closure receiver signature is required'}, status=400)
+                if not closure_iss:
+                    return JsonResponse({'error': 'Closure issuer signature is required'}, status=400)
+                if not closure_hse:
+                    return JsonResponse({'error': 'Closure HSE signature is required'}, status=400)
+                updated = update_permit(permit['id'], {
+                    'status': 'closed',
+                    'closed_at':      datetime.now().isoformat(),
+                    'closed_by':      user['username'],
+                    'closed_by_name': user['name'],
+                    'activity_images':            activity_images,
+                    'closure_receiver_signature': closure_rcv,
+                    'closure_issuer_signature':   closure_iss,
+                    'closure_hse_signature':      closure_hse,
+                })
+            else:
+                updated = update_permit(permit['id'], {
+                    'status': 'closed',
+                    'closed_at': datetime.now().isoformat(),
+                })
             return JsonResponse({'ok': True, 'permit': updated})
 
         # ── CANCEL ───────────────────────────────────────────────────────

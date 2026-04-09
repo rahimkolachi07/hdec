@@ -47,6 +47,7 @@
     .b-pending_issue{background:rgba(251,191,36,.1);color:#fbbf24;border-color:rgba(251,191,36,.25)}
     .b-pending_hse{background:rgba(249,115,22,.1);color:#fb923c;border-color:rgba(249,115,22,.25)}
     .b-active{background:rgba(34,197,94,.1);color:#4ade80;border-color:rgba(34,197,94,.25)}
+    .b-waiting_for_close{background:rgba(6,182,212,.1);color:#06b6d4;border-color:rgba(6,182,212,.25)}
     .b-closed{background:rgba(100,116,139,.1);color:#94a3b8;border-color:rgba(100,116,139,.2)}
     .b-cancelled{background:rgba(239,68,68,.1);color:#f87171;border-color:rgba(239,68,68,.2)}
 
@@ -151,6 +152,7 @@
                 {% if p.status == 'pending_issue' %}⏳
                 {% elif p.status == 'pending_hse' %}🔄
                 {% elif p.status == 'active' %}✅
+                {% elif p.status == 'waiting_for_close' %}📋
                 {% elif p.status == 'closed' %}🔒
                 {% else %}✕{% endif %}
                 {{ p.status_label }}
