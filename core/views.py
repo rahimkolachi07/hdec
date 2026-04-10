@@ -9,6 +9,14 @@ from .auth_utils import (
     authenticate, get_all_users, create_user, delete_user, change_password,
     update_user_permissions, MODULES, DEFAULT_PERMISSIONS,
 )
+from .project_utils import (
+    get_countries, get_country, get_project, get_project_module_cards,
+    create_country, update_country, delete_country,
+    create_project, update_project, delete_project,
+    MODULE_META, ALL_MODULE_IDS,
+    CATEGORY_META, ALL_CATEGORY_IDS,
+    get_project_categories, get_all_modules_flat,
+)
 
 # ── HELPERS ────────────────────────────────────────────────────────────────
 
@@ -177,7 +185,221 @@ def parse_generic_sheet(raw_csv):
 
 @login_required
 def home(request):
-    return render(request, "core/index.html", _ctx(request))
+    """Landing page — country selection."""
+    countries = get_countries()
+    countries_ctx = [
+        {**c, 'project_count': len(c.get('projects', [])), 'projects': []}
+        for c in countries
+    ]
+    return render(request, 'core/landing.html', _ctx(request, {
+        'countries': countries_ctx,
+    }))
+
+
+@login_required
+def country_view(request, country_id):
+    """Projects list for a specific country."""
+    country = get_country(country_id)
+    if not country:
+        return redirect('/')
+
+    module_icons = {mid: meta['icon'] for mid, meta in MODULE_META.items()}
+
+    projects_ctx = []
+    for p in country.get('projects', []):
+        all_mods = get_all_modules_flat(p)
+        cats = get_project_categories(p)
+        cats_json = {
+            cid: {'modules': cats.get(cid, {}).get('modules', [])}
+            for cid in ALL_CATEGORY_IDS
+        }
+        projects_ctx.append({
+            **p,
+            'module_count': len(all_mods),
+            'module_icons': [module_icons.get(m, '📦') for m in all_mods[:6]],
+            'categories_json': json.dumps(cats_json),
+            'created_at': p.get('created_at', '')[:10],
+        })
+
+    all_modules_json = json.dumps([
+        {'id': mid, 'label': meta['label'], 'icon': meta['icon']}
+        for mid, meta in MODULE_META.items()
+    ])
+    all_categories_json = json.dumps([
+        {'id': cid, 'label': meta['label'], 'icon': meta['icon'], 'color': meta['color']}
+        for cid, meta in CATEGORY_META.items()
+    ])
+
+    return render(request, 'core/country_projects.html', _ctx(request, {
+        'country': country,
+        'projects': projects_ctx,
+        'all_modules_json': all_modules_json,
+        'all_categories_json': all_categories_json,
+    }))
+
+
+@login_required
+def project_hub_view(request, country_id, project_id):
+    """Category selector hub for a specific project."""
+    country = get_country(country_id)
+    project = get_project(country_id, project_id)
+    if not country or not project:
+        return redirect('/')
+
+    cats = get_project_categories(project)
+    category_cards = []
+    for cid in ALL_CATEGORY_IDS:
+        meta = CATEGORY_META[cid]
+        mods = cats.get(cid, {}).get('modules', [])
+        category_cards.append({
+            'id': cid,
+            'label': meta['label'],
+            'icon': meta['icon'],
+            'color': meta['color'],
+            'color_rgb': meta['color_rgb'],
+            'desc': meta['desc'],
+            'module_count': len(mods),
+            'module_icons': [MODULE_META[m]['icon'] for m in mods if m in MODULE_META][:4],
+        })
+
+    return render(request, 'core/project_hub.html', _ctx(request, {
+        'country': country,
+        'project': project,
+        'category_cards': category_cards,
+    }))
+
+
+@login_required
+def category_hub_view(request, country_id, project_id, category):
+    """Module hub for a specific category within a project."""
+    country = get_country(country_id)
+    project = get_project(country_id, project_id)
+    if not country or not project:
+        return redirect('/')
+    if category not in CATEGORY_META:
+        return redirect(f'/p/{country_id}/{project_id}/')
+
+    user = get_user(request)
+    permissions = user.get('permissions', {}) if user else {}
+
+    def hex_to_rgb(hex_color):
+        h = hex_color.lstrip('#')
+        try:
+            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+            return f'{r},{g},{b}'
+        except Exception:
+            return '59,158,255'
+
+    all_cards = get_project_module_cards(project, permissions, country_id, project_id, category)
+    for card in all_cards:
+        card['color_rgb'] = hex_to_rgb(card['color'])
+
+    cmms_ids = {'activities', 'permits', 'handover'}
+    cmms_cards = [c for c in all_cards if c['id'] in cmms_ids]
+    other_cards = [c for c in all_cards if c['id'] not in cmms_ids]
+
+    cat_meta = CATEGORY_META[category]
+
+    return render(request, 'core/category_hub.html', _ctx(request, {
+        'country': country,
+        'project': project,
+        'category': category,
+        'cat_meta': cat_meta,
+        'module_cards': all_cards,
+        'cmms_cards': cmms_cards,
+        'other_cards': other_cards,
+    }))
+
+
+@csrf_exempt
+def projects_api(request):
+    """Admin API for managing countries and projects."""
+    user = get_user(request)
+    if not user or user.get('role') != 'admin':
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    action = data.get('action', '')
+
+    if action == 'add_country':
+        name = data.get('name', '').strip()
+        if not name:
+            return JsonResponse({'error': 'Name is required'})
+        new_id = create_country(name, data.get('flag', '🏴'), data.get('color', '#3b9eff'))
+        return JsonResponse({'ok': True, 'id': new_id})
+
+    elif action == 'update_country':
+        cid = data.get('id', '')
+        if not cid:
+            return JsonResponse({'error': 'id is required'})
+        update_country(cid, {
+            'name': data.get('name', '').strip(),
+            'flag': data.get('flag', '🏴'),
+            'color': data.get('color', '#3b9eff'),
+        })
+        return JsonResponse({'ok': True})
+
+    elif action == 'delete_country':
+        cid = data.get('id', '')
+        if not cid:
+            return JsonResponse({'error': 'id is required'})
+        delete_country(cid)
+        return JsonResponse({'ok': True})
+
+    elif action == 'add_project':
+        cid = data.get('country_id', '')
+        name = data.get('name', '').strip()
+        if not cid or not name:
+            return JsonResponse({'error': 'country_id and name are required'})
+        # Accept either new `categories` dict or legacy `modules` list
+        if 'categories' in data:
+            categories = data['categories']
+        else:
+            # Legacy: all selected modules go to maintenance
+            modules = data.get('modules', ALL_MODULE_IDS[:])
+            categories = {cid2: {'modules': []} for cid2 in ALL_CATEGORY_IDS}
+            categories['maintenance']['modules'] = modules
+        new_id = create_project(cid, name, data.get('description', ''), categories)
+        if not new_id:
+            return JsonResponse({'error': 'Country not found'})
+        return JsonResponse({'ok': True, 'id': new_id})
+
+    elif action == 'update_project':
+        cid = data.get('country_id', '')
+        pid = data.get('id', '')
+        if not cid or not pid:
+            return JsonResponse({'error': 'country_id and id are required'})
+        fields = {}
+        if 'name' in data:
+            fields['name'] = data['name'].strip()
+        if 'description' in data:
+            fields['description'] = data['description'].strip()
+        if 'categories' in data:
+            cats = {}
+            for cat_id in ALL_CATEGORY_IDS:
+                cat_data = data['categories'].get(cat_id, {})
+                cats[cat_id] = {
+                    'modules': [m for m in cat_data.get('modules', []) if m in MODULE_META]
+                }
+            fields['categories'] = cats
+        update_project(cid, pid, fields)
+        return JsonResponse({'ok': True})
+
+    elif action == 'delete_project':
+        cid = data.get('country_id', '')
+        pid = data.get('id', '')
+        if not cid or not pid:
+            return JsonResponse({'error': 'country_id and id are required'})
+        delete_project(cid, pid)
+        return JsonResponse({'ok': True})
+
+    return JsonResponse({'error': f'Unknown action: {action}'}, status=400)
 
 @login_required
 def manpower(request):

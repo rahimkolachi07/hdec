@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import cmms_views
+from . import project_views
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -45,6 +46,37 @@ urlpatterns = [
     path('api/annual-plan/', views.annual_plan_api, name='annual_plan_api'),
     path('api/annual-plan/sheet/<slug:slug>/', views.annual_plan_sheet_api, name='annual_plan_sheet_api'),
     path('api/annual-plan/<slug:slug>/', views.annual_plan_folder_api, name='annual_plan_folder_api'),
+
+    # ── Multi-Country / Multi-Project ────────────────────────────────────
+    path('c/<str:country_id>/', views.country_view, name='country_view'),
+    path('p/<str:country_id>/<str:project_id>/', views.project_hub_view, name='project_hub'),
+    path('api/projects/', views.projects_api, name='projects_api'),
+
+    # ── Category Hub (Country → Project → Category → Modules) ────────────
+    path('p/<str:country_id>/<str:project_id>/<str:category>/', views.category_hub_view, name='category_hub'),
+
+    # ── Category-scoped: Manpower ─────────────────────────────────────────
+    path('p/<str:country_id>/<str:project_id>/<str:category>/manpower/', project_views.project_manpower, name='project_manpower'),
+    path('api/p/<str:country_id>/<str:project_id>/<str:category>/manpower/', project_views.project_manpower_api, name='project_manpower_api'),
+
+    # ── Category-scoped: CMMS Hub ─────────────────────────────────────────
+    path('p/<str:country_id>/<str:project_id>/<str:category>/cmms/', project_views.project_cmms_hub, name='project_cmms_hub'),
+
+    # ── Category-scoped: Activities ───────────────────────────────────────
+    path('p/<str:country_id>/<str:project_id>/<str:category>/cmms/activities/', project_views.project_activities, name='project_activities'),
+    path('api/p/<str:country_id>/<str:project_id>/<str:category>/activities/', project_views.project_activities_api, name='project_activities_api'),
+
+    # ── Category-scoped: Permits ──────────────────────────────────────────
+    path('p/<str:country_id>/<str:project_id>/<str:category>/cmms/permits/', project_views.project_permits, name='project_permits'),
+    path('p/<str:country_id>/<str:project_id>/<str:category>/cmms/permits/new/', project_views.project_permit_detail, name='project_permit_new'),
+    path('p/<str:country_id>/<str:project_id>/<str:category>/cmms/permits/<str:permit_id>/', project_views.project_permit_detail, name='project_permit_detail'),
+    path('api/p/<str:country_id>/<str:project_id>/<str:category>/permits/', project_views.project_permits_api, name='project_permits_api'),
+
+    # ── Category-scoped: Handover ─────────────────────────────────────────
+    path('p/<str:country_id>/<str:project_id>/<str:category>/cmms/handover/', project_views.project_handovers, name='project_handovers'),
+    path('p/<str:country_id>/<str:project_id>/<str:category>/cmms/handover/new/', project_views.project_handover_detail, name='project_handover_new'),
+    path('p/<str:country_id>/<str:project_id>/<str:category>/cmms/handover/<str:handover_id>/', project_views.project_handover_detail, name='project_handover_detail'),
+    path('api/p/<str:country_id>/<str:project_id>/<str:category>/handover/', project_views.project_handover_api, name='project_handover_api'),
 
     # ── CMMS ─────────────────────────────────────────────────────────────
     path('cmms/', cmms_views.cmms_hub, name='cmms_hub'),
